@@ -1,0 +1,20 @@
+# Exclude files and folders from the Docker build context
+
+# Node.js
+node_modules
+npm-debug.log
+
+# Build output
+dist
+
+# Docker
+.dockerignore
+Dockerfile
+
+# Git
+.git
+.gitignore
+
+# Editor/OS
+.vscode
+.DS_Store

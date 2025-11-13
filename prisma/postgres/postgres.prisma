@@ -1,0 +1,24 @@
+generator postgresClient {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/postgres-client"
+}
+
+datasource postgres {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model User {
+  idUser            Int      @default(autoincrement())
+  email             String   @unique(map: "UQ_user_email")
+  password          String
+  name              String   @unique(map: "UQ_user_name")
+  photoPath         String?
+  agreedWithTerms   Boolean  @default(false)
+  isActive          Boolean  @default(false)
+  accessLevel       Int      @default(1)
+  isEmailConfirmed  Boolean  @default(false)
+  createdAt         DateTime @default(now()) @postgres.Timestamptz
+
+  @@id([idUser], map: "PK_user")
+}

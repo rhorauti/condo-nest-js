@@ -6,6 +6,14 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "prisma:generate:pg": "npx prisma generate --schema=./prisma/postgres/postgres.prisma",
+    "prisma:generate:mongo": "npx prisma generate --schema=./prisma/mongodb/mongo.prisma",
+    "prisma:generate:all": "npm run prisma:generate:pg && npm run prisma:generate:mongo",
+    "db:push:pg": "npx prisma db push --schema=./prisma/postgres/postgres.prisma",
+    "db:push:mongo": "npx prisma db push --schema=./prisma/mongodb/mongo.prisma",
+    "db:push:all": "npm run db:push:pg && npm run db:push:mongo",
+    "db:migrate:pg": "npx prisma migrate dev --schema=./prisma/postgres/postgres.prisma",
+    "db:reset:pg": "npx prisma migrate reset --schema=./prisma/postgres/postgres.prisma",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -22,8 +30,11 @@
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.1",
     "@prisma/client": "^6.19.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

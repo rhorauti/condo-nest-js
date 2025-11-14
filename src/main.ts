@@ -9,6 +9,7 @@ async function bootstrap() {
 
   const reflector = app.get(Reflector);
 
+  app.setGlobalPrefix('v1');
   app.useGlobalFilters(new AllExceptionsFilter(reflector));
   app.useGlobalInterceptors(new TransformInterceptor(reflector));
   app.useGlobalPipes(

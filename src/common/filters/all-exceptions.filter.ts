@@ -11,11 +11,10 @@ import { Reflector } from '@nestjs/core';
 import { Request, Response } from 'express';
 import { ERROR_MESSAGE_KEY } from '../decorators/error-message.decorator';
 
-// 1. Define a helper interface for the expected response structure
 interface HttpExceptionResponse {
   statusCode: number;
   message: string | string[];
-  error: string;
+  error?: string;
 }
 
 @Catch()
@@ -29,8 +28,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    // FIX 1: Cast 'host' to 'ExecutionContext' to access 'getHandler'
-    // We use optional chaining (?.) in case the error happens outside a handler (e.g., middleware)
     const handler = (host as unknown as ExecutionContext).getHandler?.();
 
     const status =
@@ -38,24 +35,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    // Safe retrieval: If handler is undefined (e.g., 404 error), this returns undefined
     const customMessage = handler
       ? this.reflector.get<string>(ERROR_MESSAGE_KEY, handler)
       : undefined;
 
-    // FIX 2: Resolve ESLint Unsafe Assignment by strict type narrowing
     let defaultMessage: string | string[] = 'Internal server error';
 
     if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse();
 
-      // Strictly check if the response is an object and matches our interface
       if (
         typeof exceptionResponse === 'object' &&
         exceptionResponse !== null &&
         'message' in exceptionResponse
       ) {
-        // Cast to our known interface
         defaultMessage = (exceptionResponse as HttpExceptionResponse).message;
       } else if (typeof exceptionResponse === 'string') {
         defaultMessage = exceptionResponse;
@@ -64,20 +57,38 @@ export class AllExceptionsFilter implements ExceptionFilter {
       defaultMessage = exception.message;
     }
 
-    // Flatten array messages (common in validation errors) to a single string
     if (Array.isArray(defaultMessage)) {
       defaultMessage = defaultMessage.join(', ');
     }
 
-    // Final decision
-    const finalMessage = customMessage || defaultMessage;
+    let finalMessage: string | string[] = 'Internal server error';
 
-    // FIX 3: Safe stack access
-    const stackTrace = exception instanceof Error ? exception.stack : '';
+    if (exception instanceof HttpException) {
+      const exceptionResponse = exception.getResponse();
+      if (
+        typeof exceptionResponse === 'object' &&
+        exceptionResponse !== null &&
+        'message' in exceptionResponse
+      ) {
+        finalMessage = (exceptionResponse as HttpExceptionResponse).message;
+      } else if (typeof exceptionResponse === 'string') {
+        finalMessage = exceptionResponse;
+      }
+    } else if (exception instanceof Error) {
+      this.logger.error(
+        `[Internal Error]: ${exception.message}`,
+        exception.stack,
+      );
+
+      finalMessage = customMessage || 'An internal server error occurred';
+    }
+
+    if (Array.isArray(finalMessage)) {
+      finalMessage = finalMessage.join(', ');
+    }
 
     this.logger.error(
       `HTTP Status: ${status} | Error: ${finalMessage}`,
-      stackTrace,
       `${request.method} ${request.url}`,
     );
 
@@ -85,7 +96,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status: false,
       date: new Date().toISOString(),
       message: finalMessage,
-      path: request.url,
     });
   }
 }

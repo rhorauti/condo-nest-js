@@ -1,6 +1,6 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
@@ -9,6 +9,7 @@ async function bootstrap() {
 
   const reflector = app.get(Reflector);
 
+  app.enableCors();
   app.setGlobalPrefix('v1');
   app.useGlobalFilters(new AllExceptionsFilter(reflector));
   app.useGlobalInterceptors(new TransformInterceptor(reflector));

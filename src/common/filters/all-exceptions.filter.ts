@@ -1,13 +1,14 @@
 import {
-  ExceptionFilter,
-  Catch,
   ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  ExecutionContext,
   HttpException,
   HttpStatus,
   Logger,
-  ExecutionContext,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 import { ERROR_MESSAGE_KEY } from '../decorators/error-message.decorator';
 
@@ -30,40 +31,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const handler = (host as unknown as ExecutionContext).getHandler?.();
 
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
-
     const customMessage = handler
       ? this.reflector.get<string>(ERROR_MESSAGE_KEY, handler)
       : undefined;
 
-    let defaultMessage: string | string[] = 'Internal server error';
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let finalMessage: string | string[] = 'An internal server error occurred';
 
     if (exception instanceof HttpException) {
-      const exceptionResponse = exception.getResponse();
+      status = exception.getStatus();
 
-      if (
-        typeof exceptionResponse === 'object' &&
-        exceptionResponse !== null &&
-        'message' in exceptionResponse
-      ) {
-        defaultMessage = (exceptionResponse as HttpExceptionResponse).message;
-      } else if (typeof exceptionResponse === 'string') {
-        defaultMessage = exceptionResponse;
-      }
-    } else if (exception instanceof Error) {
-      defaultMessage = exception.message;
-    }
-
-    if (Array.isArray(defaultMessage)) {
-      defaultMessage = defaultMessage.join(', ');
-    }
-
-    let finalMessage: string | string[] = 'Internal server error';
-
-    if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse();
       if (
         typeof exceptionResponse === 'object' &&
@@ -74,23 +51,42 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else if (typeof exceptionResponse === 'string') {
         finalMessage = exceptionResponse;
       }
+    } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      this.logger.warn(
+        `Prisma Error [${exception.code}]: ${exception.message}`,
+      );
+
+      switch (exception.code) {
+        case 'P2002': // Unique constraint violation (e.g., duplicate email)
+          status = HttpStatus.CONFLICT; // 409
+          finalMessage = 'Registro duplicado.'; // Função auxiliar para extrair o campo
+          break;
+
+        case 'P2025': // Record to update/delete/find unique not found
+          status = HttpStatus.NOT_FOUND; // 404
+          finalMessage = 'Registro não encontrado.';
+          break;
+
+        default:
+          // Deixa como 500 para outros erros de DB não mapeados
+          finalMessage = 'A database operation failed unexpectedly.';
+          break;
+      }
     } else if (exception instanceof Error) {
       this.logger.error(
         `[Internal Error]: ${exception.message}`,
         exception.stack,
       );
-
       finalMessage = customMessage || 'An internal server error occurred';
     }
+
+    // ... (Sua conversão de Array para string e resposta final)
 
     if (Array.isArray(finalMessage)) {
       finalMessage = finalMessage.join(', ');
     }
 
-    this.logger.error(
-      `HTTP Status: ${status} | Error: ${finalMessage}`,
-      `${request.method} ${request.url}`,
-    );
+    console.log('error message: ' + finalMessage);
 
     response.status(status).json({
       status: false,

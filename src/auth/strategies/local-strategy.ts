@@ -1,7 +1,7 @@
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PostgresAuthService } from '../../auth/postgres-auth.service';
+import { PostgresAuthService } from '../postgres-auth.service';
 import { compare } from 'bcrypt';
 
 @Injectable()

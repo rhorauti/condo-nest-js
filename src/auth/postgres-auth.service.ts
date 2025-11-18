@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PostgresService } from '../../prisma/postgres/postgres.service';
 import { Prisma } from '@prisma/postgres-client/client';
-import { LoginDTO } from '../common/dto/auth.dto';
+import { SignUpDTO } from './dto/signup.dto';
 
 @Injectable()
 export class PostgresAuthService {
@@ -49,10 +49,9 @@ export class PostgresAuthService {
     });
   }
 
-  async createUser(userDTO: LoginDTO) {
+  async createUser(userDTO: SignUpDTO) {
     const userToBeCreated: Prisma.UserCreateInput = {
       ...userDTO,
-      name: 'New User',
       accessLevel: 1,
       isActive: true,
       isEmailConfirmed: false,

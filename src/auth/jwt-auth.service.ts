@@ -1,22 +1,25 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/postgres-client/client';
 
 @Injectable()
 export class JwtAuthService {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
 
-  async createToken(user: User) {
+  createToken(user: User): string {
     const payload = {
       email: user.email,
       sub: user.idUser,
       role: user.accessLevel,
     };
 
-    const accessToken = this.jwtService.sign(payload);
-
-    return {
-      token: accessToken,
-    };
+    return this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET_KEY'),
+      expiresIn: '2d',
+    });
   }
 }

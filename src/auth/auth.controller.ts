@@ -1,44 +1,91 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
+  Get,
   InternalServerErrorException,
-  Logger,
+  NotFoundException,
   Post,
   Request,
+  Res,
   UseGuards,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { hash } from 'bcrypt';
+import type {
+  Request as ExpressRequest,
+  Response as ExpressResponse,
+} from 'express';
+import { throwNestError } from '../../utils/misc';
 import { ErrorMessage } from '../common/decorators/error-message.decorator';
 import { SuccessMessage } from '../common/decorators/response-message.decorator';
 import { EmailService } from '../email/email.service';
 import { SignUpDTO } from './dto/signup.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthService } from './jwt-auth.service';
 import { PostgresAuthService } from './postgres-auth.service';
 
+interface AuthRequest extends ExpressRequest {
+  user: {
+    email: string;
+    idUser?: number;
+    accessLevel?: number;
+  };
+  csrfToken: () => string;
+  body: User;
+}
+
 @Controller()
 export class AuthController {
-  private readonly logger = new Logger(AuthController.name);
-
   constructor(
     private readonly postgresAuthService: PostgresAuthService,
     private readonly jwtAuthService: JwtAuthService,
     private readonly emailService: EmailService,
   ) {}
 
+  @Get('csrf-token')
+  getCsrfToken(@Request() request: AuthRequest) {
+    return {
+      csrfToken: request.csrfToken(),
+    };
+  }
+
   @Post('login')
   @UseGuards(LocalAuthGuard)
   @SuccessMessage('Usuário logado com sucesso.')
   @ErrorMessage('Erro ao logar o usuário')
-  async getUser(@Request() request) {
-    const token = this.jwtAuthService.createToken(request.user);
-    return {
-      token: token,
-      email: request.user.email,
-      accessLevel: request.user.accessLevel,
-    };
+  async getUser(
+    @Request() request: AuthRequest,
+    @Res({ passthrough: true }) response: ExpressResponse,
+  ) {
+    try {
+      const user = await this.postgresAuthService.getUser({
+        where: { email: request.body.email },
+      });
+      if (user) {
+        const token = this.jwtAuthService.createToken({
+          email: user.email,
+          idUser: user.idUser,
+          accessLevel: user.accessLevel,
+        });
+        response.cookie('access_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 2 * 24 * 60 * 60 * 1000,
+        });
+        return {
+          email: request.user.email,
+          accessLevel: request.user.accessLevel,
+        };
+      } else {
+        throw new NotFoundException('Email não encontrado.');
+      }
+    } catch (error) {
+      throwNestError(error);
+    }
   }
 
   @Post('signup')
@@ -56,17 +103,7 @@ export class AuthController {
           name: createdUser.name,
           token: token,
         };
-        
-        this.logger.log(`📧 Attempting to send welcome email to: ${createdUser.email}`);
-        
-        try {
-          await this.emailService.sendSignUpEmail(emailData);
-          this.logger.log(`✅ Welcome email sent successfully to: ${createdUser.email}`);
-        } catch (emailError) {
-          this.logger.error(`❌ Failed to send welcome email to: ${createdUser.email}`, emailError);
-          // Continue with user creation even if email fails
-        }
-        
+        this.emailService.sendSignUpEmail(emailData);
         return createdUser;
       }
     } catch (error) {
@@ -79,6 +116,34 @@ export class AuthController {
         }
       }
       throw new InternalServerErrorException('Erro interno do servidor.');
+    }
+  }
+
+  @Post('token-validation')
+  @UseGuards(JwtAuthGuard)
+  async ValidateToken(@Request() request: AuthRequest) {
+    try {
+      const email = request.user?.email;
+      const user = await this.postgresAuthService.getUser({
+        where: { email: email },
+      });
+      if (!user) {
+        throw new NotFoundException('Usuário não encontrado.');
+      } else {
+        if (user.isEmailConfirmed) {
+          throw new BadRequestException(
+            `O email ${user.email} já foi confirmado anteriormente.`,
+          );
+        } else {
+          const userUpToDate = this.postgresAuthService.updateUser({
+            where: { email: email },
+            data: { isEmailConfirmed: true },
+          });
+          return userUpToDate;
+        }
+      }
+    } catch (error) {
+      throwNestError(error);
     }
   }
 }

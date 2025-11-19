@@ -12,14 +12,13 @@ export class EmailService {
   }
 
   async sendSignUpEmail({ email, name, token }) {
-    console.log('api key', this.configService.get<string>('RESEND_API_KEY'));
     await this.resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to: email,
+      from: this.configService.get<string>('RESEND_FROM_EMAIL') || '',
+      to: [email],
       subject: 'Bem vindo a ConectaCondo.',
       react: SignUpEmail({
         name: name,
-        url: `${process.env.FRONTEND_URL}/token=${token}`,
+        url: `${process.env.FRONTEND_URL}/redirect?token=${token}`,
       }),
     });
   }

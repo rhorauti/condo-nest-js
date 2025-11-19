@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PostgresService } from '../../prisma/postgres/postgres.service';
 import { Prisma } from '@prisma/postgres-client/client';
+import { PostgresService } from '../../prisma/postgres/postgres.service';
 import { SignUpDTO } from './dto/signup.dto';
 
 @Injectable()
@@ -60,6 +60,14 @@ export class PostgresAuthService {
     return await this.pg.user.create({
       data: userToBeCreated,
     });
+  }
+
+  async updateUser(params: {
+    where: Prisma.UserWhereUniqueInput;
+    data: Prisma.UserUpdateInput;
+  }) {
+    const { where, data } = params;
+    return await this.pg.user.update({ where: where, data: data });
   }
 
   async deleteUser(idUser: number) {

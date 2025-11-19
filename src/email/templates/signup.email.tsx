@@ -1,12 +1,12 @@
+import { Button, Container, Html, Text } from '@react-email/components';
 import * as React from 'react';
-import { Html, Button, Text, Container } from '@react-email/components';
 
-interface WelcomeEmailProps {
+interface SignUpEmailProps {
   name: string;
   url: string;
 }
 
-export default function SignUpEmail({ name, url }: WelcomeEmailProps) {
+export default function SignUpEmail({ name, url }: SignUpEmailProps) {
   return (
     <Html>
       <Container style={{ display: 'flex', gap: '0.5rem' }}>
@@ -20,7 +20,7 @@ export default function SignUpEmail({ name, url }: WelcomeEmailProps) {
           href={url}
           style={{ background: '#000', color: '#fff', padding: '12px 20px' }}
         >
-          Click me
+          Redirecionar
         </Button>
       </Container>
     </Html>

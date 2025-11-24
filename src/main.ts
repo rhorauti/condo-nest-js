@@ -1,5 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
+import cookieParser from 'cookie-parser';
+import csurf from 'csurf';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -8,8 +10,16 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const reflector = app.get(Reflector);
-
-  app.enableCors();
+  app.use(cookieParser());
+  app.use(
+    csurf({
+      cookie: true, // Indica que o secret será lido/escrito via cookie
+    }),
+  );
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
   app.setGlobalPrefix('v1');
   app.useGlobalFilters(new AllExceptionsFilter(reflector));
   app.useGlobalInterceptors(new TransformInterceptor(reflector));

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-export const throwNestError = (error: any) => {
+export const throwNestError = (error: unknown) => {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     switch (error.code) {
       case 'P2002': {
@@ -44,10 +44,10 @@ export const throwNestError = (error: any) => {
         );
       }
       default: {
-        throw new InternalServerErrorException('Erro interno do servidor.');
+        throw new InternalServerErrorException('Erro interno do servidor 1.');
       }
     }
   } else {
-    throw new InternalServerErrorException('Erro interno do servidor.');
+    throw new InternalServerErrorException('Erro interno do servidor 2.');
   }
 };

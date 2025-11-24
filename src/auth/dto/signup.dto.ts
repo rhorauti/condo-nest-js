@@ -24,3 +24,24 @@ export class SignUpDTO {
   @IsOptional()
   birthDate?: Date;
 }
+
+export class SignUpResponseDTO {
+  @IsNotEmpty()
+  @IsString()
+  idUser: number;
+
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsDateString()
+  @IsNotEmpty()
+  birthDate: Date;
+
+  @IsNotEmpty()
+  accessLevel: number;
+}

@@ -12,8 +12,5 @@
     "**/node_modules": true,
     "**/dist": true,
     "**/*.log": true
-  },
-  "debug.javascript.usePreview": true,
-  "debug.node.autoAttach": "off",
-  "typescript.preferences.noSemicolons": "off"
+  }
 }

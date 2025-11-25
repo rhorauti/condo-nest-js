@@ -9,17 +9,17 @@ datasource postgres {
 }
 
 model User {
-  idUser            Int         @default(autoincrement())
-  email             String      @unique(map: "UQ_user_email")
+  idUser            Int       @default(autoincrement())
+  email             String    @unique(map: "UQ_user_email")
   password          String
-  name              String      @unique(map: "UQ_user_name")
-  birthDate         DateTime?   @postgres.Timestamptz
+  name              String   
+  birthDate         DateTime? @postgres.Timestamptz
   photoPath         String?
-  agreedWithTerms   Boolean     @default(false)
-  isActive          Boolean     @default(false)
-  accessLevel       Int         @default(1)
-  isEmailConfirmed  Boolean     @default(false)
-  createdAt         DateTime    @default(now()) @postgres.Timestamptz
+  agreedWithTerms   Boolean   @default(false)
+  isActive          Boolean   @default(false)
+  accessLevel       Int       @default(1)
+  isEmailConfirmed  Boolean   @default(false)
+  createdAt         DateTime  @default(now()) @postgres.Timestamptz
 
   @@id([idUser], map: "PK_user")
 }

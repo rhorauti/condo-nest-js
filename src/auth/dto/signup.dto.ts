@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsDateString,
   IsEmail,
   IsNotEmpty,
@@ -23,6 +24,10 @@ export class SignUpDTO {
   @IsNotEmpty()
   @IsOptional()
   birthDate?: Date;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  agreedWithTerms: boolean;
 }
 
 export class SignUpResponseDTO {
@@ -44,4 +49,8 @@ export class SignUpResponseDTO {
 
   @IsNotEmpty()
   accessLevel: number;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  agreedWithTerms: boolean;
 }

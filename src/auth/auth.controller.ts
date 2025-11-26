@@ -192,7 +192,7 @@ export class AuthController {
 
       return {
         email: user.email,
-      } as PasswordRecoveryDTO;
+      };
     }
   }
 

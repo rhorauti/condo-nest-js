@@ -1,0 +1,178 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { User } from '@prisma/postgres-client';
+import { PostgresService } from '../../prisma/postgres/postgres.service';
+import { PostgresAuthService } from './postgres-auth.service';
+
+const createMockPrismaMethod = <T = any>() => jest.fn<Promise<T>, any[]>();
+
+const mockPrismaService = {
+  user: {
+    findMany: createMockPrismaMethod<User[]>(),
+    findFirst: createMockPrismaMethod<User | null>(),
+    create: createMockPrismaMethod<User>(),
+    update: createMockPrismaMethod<User>(),
+    delete: createMockPrismaMethod<User>(),
+  },
+};
+
+let service: PostgresAuthService;
+
+beforeEach(async () => {
+  jest.clearAllMocks();
+  const module: TestingModule = await Test.createTestingModule({
+    providers: [
+      PostgresAuthService,
+      { provide: PostgresService, useValue: mockPrismaService },
+    ],
+  }).compile();
+  service = module.get<PostgresAuthService>(PostgresAuthService);
+});
+
+const mockUserDTO = {
+  name: 'Fulano Silva',
+  birthDate: new Date('2000-12-01T02:00:00.000Z'),
+  email: 'teste@exemplo.com.br',
+  password: 'Teste123!',
+  agreedWithTerms: true,
+};
+
+const mockUsers: User[] = [
+  {
+    idUser: 1,
+    name: 'User 1',
+    email: 'user1@test.com',
+    password: 'alsçkdsaçlkdj23!#',
+    birthDate: new Date('2000-12-01T02:00:00.000Z'),
+    photoPath: null,
+    agreedWithTerms: true,
+    isActive: true,
+    accessLevel: 1,
+    isEmailConfirmed: false,
+    createdAt: new Date(),
+  },
+  {
+    idUser: 2,
+    name: 'User 2',
+    email: 'user2@test.com',
+    password: 'alsçkdsaçlkdj23!#',
+    birthDate: new Date('2000-12-01T02:00:00.000Z'),
+    photoPath: null,
+    agreedWithTerms: true,
+    isActive: true,
+    accessLevel: 1,
+    isEmailConfirmed: false,
+    createdAt: new Date(),
+  },
+];
+
+const mockUser: User = {
+  idUser: 1,
+  name: 'User 1',
+  email: 'user1@test.com',
+  password: 'alsçkdsaçlkdj23!#',
+  birthDate: new Date('2000-12-01T02:00:00.000Z'),
+  photoPath: null,
+  agreedWithTerms: true,
+  isActive: true,
+  accessLevel: 1,
+  isEmailConfirmed: false,
+  createdAt: new Date(),
+};
+
+describe('Postgres Auth Service', () => {
+  it('it should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  it('it should create new User', async () => {
+    const mockUser: User = {
+      idUser: 1,
+      ...mockUserDTO,
+      accessLevel: 1,
+      isActive: false,
+      isEmailConfirmed: true,
+      photoPath: null,
+      createdAt: new Date(),
+    };
+
+    mockPrismaService.user.create.mockResolvedValue(mockUser);
+
+    const result = await service.createUser(mockUserDTO);
+    expect(mockPrismaService.user.create).toHaveBeenCalledTimes(1);
+    expect(mockPrismaService.user.create).toHaveBeenCalledWith({
+      data: {
+        ...mockUserDTO,
+        accessLevel: 1,
+        isActive: true,
+        isEmailConfirmed: false,
+        photoPath: null,
+      },
+    });
+    expect(result).toEqual(mockUser);
+  });
+
+  it('it should get all users without params', async () => {
+    mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+
+    const result = await service.getUsers();
+
+    expect(mockPrismaService.user.findMany).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(mockUsers);
+    expect(mockPrismaService.user.findMany).toHaveBeenCalledWith({
+      skip: undefined,
+      take: undefined,
+      cursor: undefined,
+      where: undefined,
+      orderBy: undefined,
+      select: undefined,
+    });
+  });
+
+  it('it should get user with where param', async () => {
+    mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
+
+    const result = await service.getUser({ where: { idUser: 50 } });
+
+    expect(mockPrismaService.user.findFirst).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(mockUser);
+    expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
+      where: { idUser: 50 },
+      skip: undefined,
+      take: undefined,
+      cursor: undefined,
+      orderBy: undefined,
+      select: undefined,
+    });
+  });
+
+  it('it should update user with new data and where param', async () => {
+    mockPrismaService.user.update.mockResolvedValue(mockUser);
+
+    const result = await service.updateUser({
+      where: { idUser: 50 },
+      data: mockUser,
+    });
+
+    expect(mockPrismaService.user.update).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(mockUser);
+    expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+      where: { idUser: 50 },
+      data: mockUser,
+    });
+  });
+
+  it('it should delete user with where param', async () => {
+    const del = mockPrismaService.user.delete.mockResolvedValue(mockUser);
+    const result = await service.deleteUser(50);
+    expect(del).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(mockUser);
+    expect(del).toHaveBeenLastCalledWith({
+      where: { idUser: 50 },
+      skip: undefined,
+      take: undefined,
+      cursor: undefined,
+      orderBy: undefined,
+      select: undefined,
+    });
+  });
+});

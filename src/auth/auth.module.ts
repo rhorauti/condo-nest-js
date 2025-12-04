@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { MongoService } from '../../prisma/mongodb/mongo.service';
 import { PostgresService } from '../../prisma/postgres/postgres.service';
 import { EmailModule } from '../email/email.module';
 import { EmailService } from '../email/email.service';
@@ -26,7 +25,6 @@ import { LocalStrategy } from './strategies/local-strategy';
     PostgresAuthService,
     PostgresService,
     JwtAuthService,
-    MongoService,
     EmailService,
     LocalStrategy,
     JwtStrategy,

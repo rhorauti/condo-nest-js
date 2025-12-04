@@ -8,7 +8,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/postgres-client';
 import { Request, Response } from 'express';
 import { ERROR_MESSAGE_KEY } from '../decorators/error-message.decorator';
 

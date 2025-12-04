@@ -1,21 +1,30 @@
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/postgres-client';
+import 'dotenv/config';
+
 import {
   Injectable,
-  OnModuleInit,
-  OnModuleDestroy,
   Logger,
+  OnModuleDestroy,
+  OnModuleInit,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/postgres-client';
 
 @Injectable()
 export class PostgresService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
+  constructor() {
+    const adapter = new PrismaPg({
+      connectionString: process.env.POSTGRES_URL,
+    });
+    super({ adapter });
+  }
   private readonly logger = new Logger(PostgresService.name);
 
   async onModuleInit() {
     await this.$connect();
-    this.logger.log('✅ PostgreSQL Connected Successfully');
+    this.logger.log('✅ Postgres Connected Successfully');
   }
   async onModuleDestroy() {
     await this.$disconnect();

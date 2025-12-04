@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { User } from '@prisma/postgres-client';
+import { Prisma, User } from '@prisma/postgres-client';
 import { PostgresService } from '../../prisma/postgres/postgres.service';
 import { PostgresAuthService } from './postgres-auth.service';
 
@@ -111,6 +111,19 @@ describe('Postgres Auth Service', () => {
     expect(result).toEqual(mockUser);
   });
 
+  it('it should raise an e-mail duplicated error', async () => {
+    const prismaError = new Prisma.PrismaClientKnownRequestError(
+      'Email already exists',
+      { code: 'P2002', clientVersion: '0.0.0' },
+    );
+
+    mockPrismaService.user.create.mockRejectedValue(prismaError);
+
+    await expect(service.createUser(mockUserDTO)).rejects.toThrow(
+      Prisma.PrismaClientKnownRequestError,
+    );
+  });
+
   it('it should get all users without params', async () => {
     mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
 
@@ -121,6 +134,23 @@ describe('Postgres Auth Service', () => {
     expect(mockPrismaService.user.findMany).toHaveBeenCalledWith({
       skip: undefined,
       take: undefined,
+      cursor: undefined,
+      where: undefined,
+      orderBy: undefined,
+      select: undefined,
+    });
+  });
+
+  it('it should get all users with pagination params', async () => {
+    mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+
+    const result = await service.getUsers({ skip: 10, take: 8 });
+
+    expect(mockPrismaService.user.findMany).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(mockUsers);
+    expect(mockPrismaService.user.findMany).toHaveBeenLastCalledWith({
+      skip: 10,
+      take: 8,
       cursor: undefined,
       where: undefined,
       orderBy: undefined,

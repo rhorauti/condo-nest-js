@@ -111,9 +111,9 @@ describe('Postgres Auth Service', () => {
     expect(result).toEqual(mockUser);
   });
 
-  it('it should raise an e-mail duplicated error', async () => {
+  it('it bubble up Prisma errors', async () => {
     const prismaError = new Prisma.PrismaClientKnownRequestError(
-      'Email already exists',
+      'Bubble up this Prisma error',
       { code: 'P2002', clientVersion: '0.0.0' },
     );
 
@@ -141,6 +141,30 @@ describe('Postgres Auth Service', () => {
     });
   });
 
+  it('it should get all users with all params', async () => {
+    mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+
+    const result = await service.getUsers({
+      skip: 1,
+      take: 10,
+      cursor: { idUser: 50 },
+      where: { idUser: 10 },
+      orderBy: { idUser: 'desc' },
+      select: { idUser: true, name: true },
+    });
+
+    expect(mockPrismaService.user.findMany).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(mockUsers);
+    expect(mockPrismaService.user.findMany).toHaveBeenCalledWith({
+      skip: 1,
+      take: 10,
+      cursor: { idUser: 50 },
+      where: { idUser: 10 },
+      orderBy: { idUser: 'desc' },
+      select: { idUser: true, name: true },
+    });
+  });
+
   it('it should get all users with pagination params', async () => {
     mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
 
@@ -158,20 +182,51 @@ describe('Postgres Auth Service', () => {
     });
   });
 
-  it('it should get user with where param', async () => {
+  it('it should get user with no params', async () => {
     mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
 
-    const result = await service.getUser({ where: { idUser: 50 } });
-
-    expect(mockPrismaService.user.findFirst).toHaveBeenCalledTimes(1);
-    expect(result).toEqual(mockUser);
-    expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
-      where: { idUser: 50 },
+    const result = await service.getUser({
+      where: undefined,
       skip: undefined,
       take: undefined,
       cursor: undefined,
       orderBy: undefined,
       select: undefined,
+    });
+
+    expect(mockPrismaService.user.findFirst).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(mockUser);
+    expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
+      where: undefined,
+      skip: undefined,
+      take: undefined,
+      cursor: undefined,
+      orderBy: undefined,
+      select: undefined,
+    });
+  });
+
+  it('it should get user with all params', async () => {
+    mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
+
+    const result = await service.getUser({
+      where: { idUser: 50 },
+      skip: 1,
+      take: 10,
+      cursor: { idUser: 50 },
+      orderBy: { idUser: 'desc' },
+      select: { idUser: true, name: true },
+    });
+
+    expect(mockPrismaService.user.findFirst).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(mockUser);
+    expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
+      where: { idUser: 50 },
+      skip: 1,
+      take: 10,
+      cursor: { idUser: 50 },
+      orderBy: { idUser: 'desc' },
+      select: { idUser: true, name: true },
     });
   });
 
@@ -192,11 +247,11 @@ describe('Postgres Auth Service', () => {
   });
 
   it('it should delete user with where param', async () => {
-    const del = mockPrismaService.user.delete.mockResolvedValue(mockUser);
+    mockPrismaService.user.delete.mockResolvedValue(mockUser);
     const result = await service.deleteUser(50);
-    expect(del).toHaveBeenCalledTimes(1);
+    expect(mockPrismaService.user.delete).toHaveBeenCalledTimes(1);
     expect(result).toEqual(mockUser);
-    expect(del).toHaveBeenLastCalledWith({
+    expect(mockPrismaService.user.delete).toHaveBeenLastCalledWith({
       where: { idUser: 50 },
       skip: undefined,
       take: undefined,

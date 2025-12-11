@@ -1,0 +1,674 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>condo-nest documentation</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+	   <link rel="stylesheet" href="../styles/style.css">
+        <link rel="stylesheet" href="../styles/dark.css">
+    </head>
+    <body>
+          <script>
+               // Blocking script to avoid flickering dark mode
+               // Dark mode toggle button
+               var useDark = window.matchMedia('(prefers-color-scheme: dark)');
+               var darkModeState = useDark.matches;
+               var $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               var $darkModeToggles = document.querySelectorAll('.dark-mode-switch');
+               var darkModeStateLocal = localStorage.getItem('compodoc_darkmode-state');
+
+               function checkToggle(check) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].checked = check;
+                    }
+               }
+
+               function toggleDarkMode(state) {
+                    if (window.localStorage) {
+                         localStorage.setItem('compodoc_darkmode-state', state);
+                    }
+
+                    checkToggle(state);
+
+                    const hasClass = document.body.classList.contains('dark');
+
+                    if (state) {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.add('dark');
+                         }
+                         if (!hasClass) {
+                              document.body.classList.add('dark');
+                         }
+                    } else {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.remove('dark');
+                         }
+                         if (hasClass) {
+                              document.body.classList.remove('dark');
+                         }
+                    }
+               }
+
+               useDark.addEventListener('change', function (evt) {
+                    toggleDarkMode(evt.matches);
+               });
+               if (darkModeStateLocal) {
+                    darkModeState = darkModeStateLocal === 'true';
+               }
+               toggleDarkMode(darkModeState);
+          </script>
+          <script>
+              // --- Iframe navigation tracking for Template Playground ---
+              function sendCurrentUrlToParent() {
+                  if (window.parent && window.parent !== window) {
+                      window.parent.postMessage({
+                          type: 'compodoc-iframe-navigate',
+                          url: window.location.pathname + window.location.hash
+                      }, '*');
+                  }
+              }
+              window.addEventListener('hashchange', sendCurrentUrlToParent, false);
+              window.addEventListener('popstate', sendCurrentUrlToParent, false);
+              window.addEventListener('DOMContentLoaded', sendCurrentUrlToParent, false);
+          </script>
+
+        <div class="navbar navbar-default navbar-fixed-top d-md-none p-0">
+               <div class="d-flex">
+                    <a href="../" class="navbar-brand">condo-nest documentation</a>
+                    <button type="button" class="btn btn-default btn-menu ion-ios-menu" id="btn-menu"></button>
+               </div>
+        </div>
+
+        <div class="xs-menu menu" id="mobile-menu">
+                <div id="book-search-input" role="search"><input type="text" placeholder="Type to search"></div>            <compodoc-menu></compodoc-menu>
+        </div>
+
+        <div class="container-fluid main">
+           <div class="row main">
+               <div class="d-none d-md-block menu">
+                   <compodoc-menu mode="normal"></compodoc-menu>
+               </div>
+               <!-- START CONTENT -->
+               <div class="content miscellaneous-variables">
+                   <div class="content-data">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<ol class="breadcrumb">
+  <li class="breadcrumb-item">Miscellaneous</li>
+  <li class="breadcrumb-item">Variables</li>
+</ol>
+
+<section data-compodoc="block-index">
+    <h3 id="index">Index</h3>
+    <table class="table table-sm table-bordered index-table">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <ul class="index-list">
+                        <li>
+                            <a href="#countrySetup" title="src/common/utils/misc.ts" ><b>countrySetup</b>&nbsp;&nbsp;&nbsp;(src/.../misc.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#currencyList" title="src/common/utils/misc.ts" ><b>currencyList</b>&nbsp;&nbsp;&nbsp;(src/.../misc.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#dateAndHourFormatted" title="src/common/utils/misc.ts" ><b>dateAndHourFormatted</b>&nbsp;&nbsp;&nbsp;(src/.../misc.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#emptyToNullRecursive" title="src/common/utils/misc.ts" ><b>emptyToNullRecursive</b>&nbsp;&nbsp;&nbsp;(src/.../misc.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#ERROR_MESSAGE_KEY" title="src/common/decorators/error-message.decorator.ts" ><b>ERROR_MESSAGE_KEY</b>&nbsp;&nbsp;&nbsp;(src/.../error-message.decorator.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#ErrorMessage" title="src/common/decorators/error-message.decorator.ts" ><b>ErrorMessage</b>&nbsp;&nbsp;&nbsp;(src/.../error-message.decorator.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#isUTCDate" title="src/common/utils/misc.ts" ><b>isUTCDate</b>&nbsp;&nbsp;&nbsp;(src/.../misc.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#MessageSchema" title="prisma/mongodb/schemas/message.schema.ts" ><b>MessageSchema</b>&nbsp;&nbsp;&nbsp;(prisma/.../message.schema.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#onRemoveMask" title="src/common/utils/misc.ts" ><b>onRemoveMask</b>&nbsp;&nbsp;&nbsp;(src/.../misc.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#onSetPriceToBrFormat" title="src/common/utils/misc.ts" ><b>onSetPriceToBrFormat</b>&nbsp;&nbsp;&nbsp;(src/.../misc.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#onSetPriceToDatabaseFormat" title="src/common/utils/misc.ts" ><b>onSetPriceToDatabaseFormat</b>&nbsp;&nbsp;&nbsp;(src/.../misc.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#setCnpjMask" title="src/common/utils/misc.ts" ><b>setCnpjMask</b>&nbsp;&nbsp;&nbsp;(src/.../misc.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#SUCCESS_MESSAGE_KEY" title="src/common/decorators/response-message.decorator.ts" ><b>SUCCESS_MESSAGE_KEY</b>&nbsp;&nbsp;&nbsp;(src/.../response-message.decorator.ts)</a>
+                        </li>
+                        <li>
+                            <a href="#SuccessMessage" title="src/common/decorators/response-message.decorator.ts" ><b>SuccessMessage</b>&nbsp;&nbsp;&nbsp;(src/.../response-message.decorator.ts)</a>
+                        </li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+    <h3>src/common/utils/misc.ts</h3>
+    <section data-compodoc="block-properties">
+    <h3></h3>    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="countrySetup"></a>
+                    <span class="name">
+                        <span ><b>countrySetup</b></span>
+                        <a href="#countrySetup"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>&#x27;pt-BR&#x27;</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="currencyList"></a>
+                    <span class="name">
+                        <span ><b>currencyList</b></span>
+                        <a href="#currencyList"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>[]</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>[&#x27;R$&#x27;, &#x27;USD&#x27;]</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="dateAndHourFormatted"></a>
+                    <span class="name">
+                        <span ><b>dateAndHourFormatted</b></span>
+                        <a href="#dateAndHourFormatted"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>unknown</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>(
+  dateAndHour: Date,
+  dateFormat: DateFormat &#x3D; &#x27;short&#x27;,
+  timeFormat: DateFormat &#x3D; &#x27;short&#x27;,
+): string &#x3D;&gt; {
+  return new Intl.DateTimeFormat(countrySetup, {
+    dateStyle: dateFormat,
+    timeStyle: timeFormat,
+  }).format(dateAndHour);
+}</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="emptyToNullRecursive"></a>
+                    <span class="name">
+                        <span ><b>emptyToNullRecursive</b></span>
+                        <a href="#emptyToNullRecursive"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>unknown</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>(obj: Record&lt;string, any&gt;): void &#x3D;&gt; {
+  for (const key in obj) {
+    if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+    const value &#x3D; obj[key];
+    if (typeof value &#x3D;&#x3D; &#x27;object&#x27; &amp;&amp; value !&#x3D; null) {
+      emptyToNullRecursive(value);
+    }
+    if (
+      (typeof value &#x3D;&#x3D; &#x27;string&#x27; &amp;&amp; value.trim() &#x3D;&#x3D; &#x27;&#x27;) ||
+      (typeof value &#x3D;&#x3D; &#x27;number&#x27; &amp;&amp; value &#x3D;&#x3D; 0)
+    ) {
+      obj[key] &#x3D; null;
+    }
+  }
+}</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="isUTCDate"></a>
+                    <span class="name">
+                        <span ><b>isUTCDate</b></span>
+                        <a href="#isUTCDate"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>unknown</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>(value: Date | number | string): boolean &#x3D;&gt; {
+  if (value instanceof Date &amp;&amp; !isNaN(value.getTime())) return true;
+  if (
+    typeof value &#x3D;&#x3D;&#x3D; &#x27;string&#x27; &amp;&amp;
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(value)
+  )
+    return true;
+  return false;
+}</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="onRemoveMask"></a>
+                    <span class="name">
+                        <span ><b>onRemoveMask</b></span>
+                        <a href="#onRemoveMask"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>unknown</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>(data: string): string &#x3D;&gt; {
+  return (data ?? &#x27;&#x27;).replace(/[\D]/g, &#x27;&#x27;);
+}</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="onSetPriceToBrFormat"></a>
+                    <span class="name">
+                        <span ><b>onSetPriceToBrFormat</b></span>
+                        <a href="#onSetPriceToBrFormat"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>unknown</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>(price: number): string &#x3D;&gt; {
+  return price.toLocaleString(&#x27;pt-BR&#x27;, {
+    style: &#x27;currency&#x27;,
+    currency: &#x27;BRL&#x27;,
+  });
+}</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="onSetPriceToDatabaseFormat"></a>
+                    <span class="name">
+                        <span ><b>onSetPriceToDatabaseFormat</b></span>
+                        <a href="#onSetPriceToDatabaseFormat"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>unknown</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>(price: string): number &#x3D;&gt; {
+  return parseFloat(price.replace(/\./g, &#x27;&#x27;).replace(&#x27;,&#x27;, &#x27;.&#x27;));
+}</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="setCnpjMask"></a>
+                    <span class="name">
+                        <span ><b>setCnpjMask</b></span>
+                        <a href="#setCnpjMask"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>unknown</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>(cnpj: string): string &#x3D;&gt; {
+  return (cnpj?.length ?? 0) &gt; 11 ? &#x27;00.000.000/0000-00&#x27; : &#x27;000.000.000-00&#x27;;
+}</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+</section>
+    <h3>src/common/decorators/error-message.decorator.ts</h3>
+    <section data-compodoc="block-properties">
+    <h3></h3>    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="ERROR_MESSAGE_KEY"></a>
+                    <span class="name">
+                        <span ><b>ERROR_MESSAGE_KEY</b></span>
+                        <a href="#ERROR_MESSAGE_KEY"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>&#x27;error_message&#x27;</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="ErrorMessage"></a>
+                    <span class="name">
+                        <span ><b>ErrorMessage</b></span>
+                        <a href="#ErrorMessage"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>unknown</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>(message: string) &#x3D;&gt;
+  SetMetadata(ERROR_MESSAGE_KEY, message)</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+</section>
+    <h3>prisma/mongodb/schemas/message.schema.ts</h3>
+    <section data-compodoc="block-properties">
+    <h3></h3>    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="MessageSchema"></a>
+                    <span class="name">
+                        <span ><b>MessageSchema</b></span>
+                        <a href="#MessageSchema"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>unknown</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>SchemaFactory.createForClass(Message)</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+</section>
+    <h3>src/common/decorators/response-message.decorator.ts</h3>
+    <section data-compodoc="block-properties">
+    <h3></h3>    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="SUCCESS_MESSAGE_KEY"></a>
+                    <span class="name">
+                        <span ><b>SUCCESS_MESSAGE_KEY</b></span>
+                        <a href="#SUCCESS_MESSAGE_KEY"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>&#x27;success_message&#x27;</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="SuccessMessage"></a>
+                    <span class="name">
+                        <span ><b>SuccessMessage</b></span>
+                        <a href="#SuccessMessage"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>    <code>unknown</code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>(message: string) &#x3D;&gt;
+  SetMetadata(SUCCESS_MESSAGE_KEY, message)</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+</section>
+
+
+
+                   </div><div class="search-results">
+    <div class="has-results">
+        <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+        <ul class="search-results-list"></ul>
+    </div>
+    <div class="no-results">
+        <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+    </div>
+</div>
+</div>
+               <!-- END CONTENT -->
+           </div>
+       </div>
+
+          <label class="dark-mode-switch">
+               <input type="checkbox">
+               <span class="slider">
+                    <svg class="slider-icon" viewBox="0 0 24 24" fill="none" height="20" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+                    </svg>
+               </span>
+          </label>
+
+       <script>
+            var COMPODOC_CURRENT_PAGE_DEPTH = 1;
+            var COMPODOC_CURRENT_PAGE_CONTEXT = 'miscellaneous-variables';
+            var COMPODOC_CURRENT_PAGE_URL = 'variables.html';
+            var MAX_SEARCH_RESULTS = 15;
+       </script>
+
+       <script>
+               $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               checkToggle(darkModeState);
+               if ($darkModeToggleSwitchers.length > 0) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].addEventListener('change', function (event) {
+                              darkModeState = !darkModeState;
+                              toggleDarkMode(darkModeState);
+                         });
+                    }
+               }
+          </script>
+
+       <script src="../js/libs/custom-elements.min.js"></script>
+       <script src="../js/libs/lit-html.js"></script>
+
+       <script src="../js/menu-wc.js" defer></script>
+       <script nomodule src="../js/menu-wc_es5.js" defer></script>
+
+       <script src="../js/libs/bootstrap-native.js"></script>
+
+       <script src="../js/libs/es6-shim.min.js"></script>
+       <script src="../js/libs/EventDispatcher.js"></script>
+       <script src="../js/libs/promise.min.js"></script>
+
+       <script src="../js/compodoc.js"></script>
+
+       <script src="../js/tabs.js"></script>
+       <script src="../js/menu.js"></script>
+       <script src="../js/libs/clipboard.min.js"></script>
+       <script src="../js/libs/prism.js"></script>
+       <script src="../js/sourceCode.js"></script>
+          <script src="../js/search/search.js"></script>
+          <script src="../js/search/lunr.min.js"></script>
+          <script src="../js/search/search-lunr.js"></script>
+          <script src="../js/search/search_index.js"></script>
+       <script src="../js/lazy-load-graphs.js"></script>
+
+
+    </body>
+</html>

@@ -28,7 +28,7 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
         throw new UnauthorizedException('Senha inválida.');
       }
     } else {
-      throw new UnauthorizedException('Email ou senha inválidos.');
+      throw new UnauthorizedException('Email inválido.');
     }
   }
 }

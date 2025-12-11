@@ -1,0 +1,22 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "es2020",
+    "moduleResolution": "node",
+    "target": "es2015",
+    "lib": ["es2018", "dom"],
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "strictPropertyInitialization": false,
+    "noImplicitAny": false,
+    "types": ["node"],
+    "baseUrl": "./",
+    "paths": {
+      "@angular/*": ["../../node_modules/@angular/*"],
+      "rxjs": ["../../node_modules/rxjs"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "../../node_modules"]
+}

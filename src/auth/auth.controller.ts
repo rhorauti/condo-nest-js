@@ -12,11 +12,14 @@ import {
 import { User } from '@prisma/client';
 import { hash } from 'bcrypt';
 import type { Request, Response } from 'express';
-import { ErrorMessage } from '../common/decorators/error-message.decorator';
-import { SuccessMessage } from '../common/decorators/response-message.decorator';
+import { ErrorMessage } from '../core/decorators/error-message.decorator';
+import { SuccessMessage } from '../core/decorators/response-message.decorator';
 import { EmailService } from '../email/email.service';
-import { NewPasswordDTO, NewPasswordResponseDTO } from './dto/new-password.dto';
-import { PasswordRecoveryDTO } from './dto/passowrd-recovery.dto';
+import {
+  ChangePasswordDTO,
+  ChangePasswordResponseDTO,
+} from './dto/new-password.dto';
+import { SendRecoveryEmailDTO } from './dto/passowrd-recovery.dto';
 import { SignUpDTO, SignUpResponseDTO } from './dto/signup.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -207,8 +210,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async updatePassword(
     @Req() req: IAuthRequest,
-    @Body() userDTO: NewPasswordDTO,
-  ): Promise<NewPasswordResponseDTO> {
+    @Body() userDTO: ChangePasswordDTO,
+  ): Promise<ChangePasswordResponseDTO> {
     const email = req.user.email;
     const user = await this.postgresAuthService.getUser({
       where: { email: email },
@@ -250,8 +253,8 @@ export class AuthController {
   @SuccessMessage('E-mail enviado com sucesso.')
   @ErrorMessage('Erro ao enviar o e-mail. Tente novamente mais tarde.')
   async sendRecoveryEmail(
-    @Body() userDTO: PasswordRecoveryDTO,
-  ): Promise<PasswordRecoveryDTO> {
+    @Body() userDTO: SendRecoveryEmailDTO,
+  ): Promise<SendRecoveryEmailDTO> {
     const user = await this.postgresAuthService.getUser({
       where: { email: userDTO.email },
     });

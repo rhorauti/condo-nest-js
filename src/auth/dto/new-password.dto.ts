@@ -1,21 +1,19 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { Expose } from 'class-transformer';
+import { IsNotEmpty, IsString } from 'class-validator';
 
-export class NewPasswordDTO {
+export class ChangePasswordDTO {
   @IsString()
   @IsNotEmpty()
   password: string;
 }
 
-export class NewPasswordResponseDTO {
-  @IsNotEmpty()
-  @IsString()
+export class ChangePasswordResponseDTO {
+  @Expose()
   idUser: number;
 
-  @IsNotEmpty()
-  @IsString()
+  @Expose()
   name: string;
 
-  @IsEmail()
-  @IsNotEmpty()
+  @Expose()
   email: string;
 }

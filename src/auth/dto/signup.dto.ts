@@ -1,3 +1,4 @@
+import { Expose } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
@@ -31,26 +32,21 @@ export class SignUpDTO {
 }
 
 export class SignUpResponseDTO {
-  @IsNotEmpty()
-  @IsString()
+  @Expose()
   idUser: number;
 
-  @IsNotEmpty()
-  @IsString()
+  @Expose()
   name: string;
 
-  @IsEmail()
-  @IsNotEmpty()
+  @Expose()
   email: string;
 
-  @IsDateString()
-  @IsNotEmpty()
+  @Expose()
   birthDate: Date;
 
-  @IsNotEmpty()
+  @Expose()
   accessLevel: number;
 
-  @IsBoolean()
-  @IsNotEmpty()
+  @Expose()
   agreedWithTerms: boolean;
 }

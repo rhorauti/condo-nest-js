@@ -1,8 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { POST_TYPE } from '../../common/enum/post.enum';
+import { POST_TYPE } from '../../core/enum/post.enum';
 
 export type PostDocument = HydratedDocument<Post>;
+
+@Schema({ timestamps: true })
+export class Comment {
+  @Prop({ required: true })
+  senderId: number;
+
+  @Prop({ required: true })
+  description: string;
+}
+
+const CommentSchema = SchemaFactory.createForClass(Comment);
 
 @Schema({ timestamps: true }) // Auto-adds createdAt, updatedAt
 export class Post {
@@ -27,14 +38,14 @@ export class Post {
   @Prop({ default: false })
   isSaved: boolean;
 
-  @Prop({ default: 0 })
-  commentsQty: number;
+  @Prop({ type: [CommentSchema], default: [] })
+  comments: Comment[];
 
-  @Prop({ default: 0 })
-  likesQty: number;
+  @Prop({ type: [Number], default: [] })
+  likedBy: number[];
 
   @Prop({ required: true, index: true })
-  senderId: number; // ID from Postgres User
+  senderId: number;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

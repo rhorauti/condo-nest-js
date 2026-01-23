@@ -7,18 +7,157 @@ datasource postgres {
   provider = "postgresql"
 }
 
+enum AddressType {
+  HOUSE
+  APARTMENT
+}
+
+model Condo {
+  idCondo  Int     @default(autoincrement())
+  name     String  @unique(map: "UQ_condo_name")
+  
+  users    User[]
+  address  Address?
+
+  @@id([idCondo], map: "PK_condo")
+}
+
 model User {
-  idUser            Int       @default(autoincrement())
-  email             String    @unique(map: "UQ_user_email")
-  password          String
-  name              String   
-  birthDate         DateTime? @postgres.Timestamptz
-  photoPath         String?
-  agreedWithTerms   Boolean   @default(false)
-  isActive          Boolean   @default(false)
-  accessLevel       Int       @default(1)
-  isEmailConfirmed  Boolean   @default(false)
-  createdAt         DateTime  @default(now()) @postgres.Timestamptz
+  idUser              Int         @default(autoincrement())
+  email               String      @unique(map: "UQ_user_email")
+  password            String
+  name                String
+  birthDate           DateTime?   @postgres.Timestamptz
+  photoPath           String?
+  phone               String?
+  agreedWithTerms     Boolean     @default(false)
+  isActive            Boolean     @default(false)
+  accessLevel         Int         @default(1)
+  isEmailConfirmed    Boolean     @default(false)
+  createdAt           DateTime    @default(now()) @postgres.Timestamptz
+
+  address             Address[]
+
+  idCondo             Int?
+  condo               Condo?    @relation(fields: [idCondo], references: [idCondo])
+
+  posts               Post[]
+  comments            Comment[]
+  postLike            PostLike[]
+  commentLike         CommentLike[]
 
   @@id([idUser], map: "PK_user")
 }
+
+model Address {
+  idAddress   Int         @default(autoincrement())
+  type        AddressType @default(HOUSE)
+  street      String
+  number      String?
+  city        String
+  state       String
+  zipCode     String
+  block       String?
+  blockType   Int?   
+  lot         String?
+  lotType     Int?
+  apartament  String?
+
+  idUser      Int
+  user        User       @relation(fields: [idUser], references: [idUser],  onDelete: Cascade)
+
+  idCondo     Int         @unique
+  condo       Condo       @relation(fields: [idCondo], references: [idCondo])
+
+  @@id([idAddress], map: "PK_address")
+
+}
+
+enum PostType {
+  QUESTION_FEEDBACK
+  BULLETIN_BOARD
+  COMPLAINS
+  INDICATION
+  OTHERS
+}
+
+model Post {
+  idPost      Int       @default(autoincrement())
+  type        PostType
+  description String
+  createdAt   DateTime  @default(now()) @postgres.Timestamptz
+
+  idUser      Int
+  user        User      @relation(fields: [idUser], references: [idUser])
+
+  comments    Comment[]
+  postLike    PostLike[]
+  postMedia   PostMedia[]
+
+  @@id([idPost], map: "PK_post")
+  @@index([idUser])  
+  @@index([createdAt])  
+}
+
+model Comment {
+  idComment       Int             @default(autoincrement())
+  description     String
+  mediaList       String[]
+  createdAt       DateTime        @default(now()) @postgres.Timestamptz
+
+  idUser          Int
+  user            User            @relation(fields: [idUser], references: [idUser])
+
+  idPost          Int
+  post            Post            @relation(fields: [idPost], references: [idPost])
+
+  idParent        Int?
+  parent          Comment?        @relation("CommentReplies", fields: [idParent], references: [idComment])
+  replies         Comment[]       @relation("CommentReplies")
+  commentLike     CommentLike[]
+  postMedia       PostMedia[]
+
+  @@id([idComment], map: "PK_comment")
+  @@index([idPost])  
+  @@index([idUser])
+  @@index([createdAt])
+}
+
+model PostLike {
+  idPostLike      Int     @id @default(autoincrement())
+  idUser          Int
+  idPost          Int
+
+  user            User    @relation(fields: [idUser], references: [idUser])
+  post            Post    @relation(fields: [idPost], references: [idPost],  onDelete: Cascade)
+
+  @@unique([idUser, idPost]) 
+  @@index([idPost])
+}
+
+model CommentLike {
+  idCommentLike     Int         @id @default(autoincrement())
+  idUser            Int
+  idComment         Int        
+
+  user              User        @relation(fields: [idUser], references: [idUser])
+  comment           Comment     @relation(fields: [idComment], references: [idComment],  onDelete: Cascade)
+
+  @@unique([idUser, idComment]) 
+  @@index([idComment])
+}
+
+model PostMedia {
+  idPostMedia       Int    @id @default(autoincrement())
+  idPost            Int
+  idComment         Int
+  mediaPath         String
+  size              Int?
+  format            String?
+  
+  post    Post   @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
+  comment Comment   @relation(fields: [idComment], references: [idComment], onDelete: Cascade)
+  
+  @@index([idPost, idComment])
+}
+

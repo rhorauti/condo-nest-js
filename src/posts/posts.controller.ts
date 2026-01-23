@@ -20,12 +20,12 @@ import { PostsService } from './posts.service';
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
-  @Get('posts/:userId')
+  @Get('posts/:idUser')
   @SuccessMessage('Lista de posts enviada com sucesso.')
   @ErrorMessage('Erro ao buscar a lista de posts')
   @UseGuards(JwtAuthGuard)
-  getPosts(@Param('userId') userId: number) {
-    return this.postsService.getPosts(userId);
+  getPosts(@Param('idUser') idUser: number) {
+    return this.postsService.getPosts(idUser);
   }
 
   @Get('posts/:postId')

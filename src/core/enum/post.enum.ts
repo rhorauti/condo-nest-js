@@ -7,13 +7,16 @@ export enum POST_TYPE {
 export const translatePost = (post: number): string => {
   switch (post) {
     case 0: {
-      return 'Dúvidas';
+      return 'Dúvidas & Sugestões';
     }
     case 1: {
-      return 'Quadro de Avisos';
+      return 'Avisos';
     }
     case 2: {
-      return 'Sugestões & Melhorias';
+      return 'Reclamações';
+    }
+    case 3: {
+      return 'Outros';
     }
   }
   return '';

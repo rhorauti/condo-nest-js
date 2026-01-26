@@ -73,17 +73,9 @@ model Address {
 
 }
 
-enum PostType {
-  QUESTION_FEEDBACK
-  BULLETIN_BOARD
-  COMPLAINS
-  INDICATION
-  OTHERS
-}
-
 model Post {
   idPost      Int       @default(autoincrement())
-  type        PostType
+  postType    Int
   description String
   createdAt   DateTime  @default(now()) @postgres.Timestamptz
 

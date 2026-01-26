@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateOrUpdateComment } from './dto/comment.dto';
 import { CreateOrRemoveLike } from './dto/like.dto';
-import { CreateOrUpdatePostDto } from './dto/post.dto';
+import { CreatePostDto } from './dto/post.dto';
 import { Post } from './schema/post.schema';
 
 interface IFindOptions {
@@ -17,7 +17,7 @@ interface IFindOptions {
 @Injectable()
 export class PostsService {
   constructor(@InjectModel(Post.name) private postModel: Model<Post>) {}
-  async createPost(post: CreateOrUpdatePostDto) {
+  async createPost(post: CreatePostDto) {
     const createdPost = new this.postModel(post);
     return await createdPost.save();
   }
@@ -46,7 +46,7 @@ export class PostsService {
       .exec();
   }
 
-  async updatePost(upToDatePost: CreateOrUpdatePostDto): Promise<Post | null> {
+  async updatePost(upToDatePost: CreatePostDto): Promise<Post | null> {
     if (!Types.ObjectId.isValid(upToDatePost._id || '')) {
       throw new BadRequestException(
         'Id fornecido não é um ObjectId do MongoDB',

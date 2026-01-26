@@ -1,50 +1,37 @@
+import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 import { POST_TYPE } from '../../core/enum/post.enum';
+import { CreatePostMedia } from './postMedia.dto';
 
 export class CreateOrUpdatePostDto {
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  _id?: string;
+  idPost: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  idUser: number;
 
   @IsEnum(POST_TYPE, {
     message: 'Tipo de post não corresponde as opções definidas.',
   })
   @IsNotEmpty()
-  type: POST_TYPE;
+  postType: POST_TYPE;
 
   @IsString()
-  @IsNotEmpty()
-  profileFallback: string;
-
-  @IsString()
-  @IsOptional()
-  profileUrl?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @IsString()
-  @IsOptional()
   description?: string;
 
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePostMedia)
   @IsOptional()
-  mediaList?: string[];
-
-  @IsBoolean()
-  @IsNotEmpty()
-  isSaved: boolean;
-
-  @IsNumber()
-  @IsNotEmpty()
-  userId: number; // ID from Postgres User
+  mediaList?: CreatePostMedia[];
 }

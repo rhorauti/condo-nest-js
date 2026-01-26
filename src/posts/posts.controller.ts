@@ -6,19 +6,24 @@ import {
   Param,
   Post,
   Put,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { StorageService } from '../../superbase/storage.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ErrorMessage } from '../core/decorators/error-message.decorator';
 import { SuccessMessage } from '../core/decorators/response-message.decorator';
-import { CreateOrUpdateComment } from './dto/comment.dto';
-import { CreateOrRemoveLike } from './dto/like.dto';
 import { CreateOrUpdatePostDto } from './dto/post.dto';
 import { PostsService } from './posts.service';
 
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) {}
+  constructor(
+    private readonly postsService: PostsService,
+    private readonly storageService: StorageService,
+  ) {}
 
   @Get('posts/:idUser')
   @SuccessMessage('Lista de posts enviada com sucesso.')
@@ -28,27 +33,40 @@ export class PostsController {
     return this.postsService.getPosts(idUser);
   }
 
-  @Get('posts/:postId')
-  @SuccessMessage('Post enviado com sucesso.')
-  @ErrorMessage('Erro ao buscar o post solicitado.')
-  @UseGuards(JwtAuthGuard)
-  getPost(@Param('postId') postId: string) {
-    return this.postsService.getPost(postId);
-  }
-
   @Post('posts')
+  @UseInterceptors(FilesInterceptor('files'))
   @SuccessMessage('Post criado com sucesso.')
   @ErrorMessage('Erro ao criar o post.')
   @UseGuards(JwtAuthGuard)
-  createPost(@Body() createPostDto: CreateOrUpdatePostDto) {
-    return this.postsService.createPost(createPostDto);
+  async createPost(
+    @Body() createPostDto: CreateOrUpdatePostDto,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    const post = this.postsService.createPost(createPostDto);
+    const uploadedMedia = await Promise.all(
+      (files || []).map((file) =>
+        this.storageService.uploadFile({
+          buffer: file.buffer,
+          originalName: file.originalname,
+          contentType: file.mimetype,
+          folder: 'posts',
+        }),
+      ),
+    );
+    const mediaList = uploadedMedia.map((m) => ({
+      url: m.url, // depende de como é seu CreatePostMedia
+      path: m.path, // se você tiver esse campo
+      // outros campos...
+    }));
+
+    return post;
   }
 
   @Put('posts')
   @SuccessMessage('Post atualizado com sucesso.')
   @ErrorMessage('Erro ao atualiar o post.')
   @UseGuards(JwtAuthGuard)
-  updatePost(@Body() createPostDto: CreateOrUpdatePostDto) {
+  updatePost(@Body() createPostDto: CreatePostDto) {
     return this.postsService.updatePost(createPostDto);
   }
 

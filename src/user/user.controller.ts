@@ -24,7 +24,7 @@ import { SignUpDTO, SignUpResponseDTO } from './dto/signup.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthService } from './jwt-auth.service';
-import { PostgresAuthService } from './postgres-auth.service';
+import { UserService } from './user.service';
 
 interface IAuthRequest {
   user: IUserAuth;
@@ -46,9 +46,9 @@ interface IUserAuth extends Request {
  * JWT generation, and Email notifications.
  */
 @Controller()
-export class AuthController {
+export class UserController {
   constructor(
-    private readonly postgresAuthService: PostgresAuthService,
+    private readonly postgresAuthService: UserService,
     private readonly jwtAuthService: JwtAuthService,
     private readonly emailService: EmailService,
   ) {}

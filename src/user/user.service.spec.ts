@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma, User } from '@prisma/postgres-client';
-import { PostgresService } from '../../prisma/postgres/postgres.service';
-import { PostgresAuthService } from './postgres-auth.service';
+import { PrismaService } from '../../prisma/postgres/prisma.service';
+import { UserService } from './user.service';
 
 const createMockPrismaMethod = <T = any>() => jest.fn<Promise<T>, any[]>();
 
@@ -15,17 +15,17 @@ const mockPrismaService = {
   },
 };
 
-let service: PostgresAuthService;
+let service: UserService;
 
 beforeEach(async () => {
   jest.clearAllMocks();
   const module: TestingModule = await Test.createTestingModule({
     providers: [
-      PostgresAuthService,
-      { provide: PostgresService, useValue: mockPrismaService },
+      UserService,
+      { provide: PrismaService, useValue: mockPrismaService },
     ],
   }).compile();
-  service = module.get<PostgresAuthService>(PostgresAuthService);
+  service = module.get<UserService>(UserService);
 });
 
 const mockUserDTO = {

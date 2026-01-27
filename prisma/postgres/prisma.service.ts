@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 
 @Injectable()
-export class PostgresService
+export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
@@ -20,7 +20,7 @@ export class PostgresService
     });
     super({ adapter });
   }
-  private readonly logger = new Logger(PostgresService.name);
+  private readonly logger = new Logger(PrismaService.name);
 
   async onModuleInit() {
     await this.$connect();

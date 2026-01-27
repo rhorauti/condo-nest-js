@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/postgres-client/client';
-import { PostgresService } from '../../prisma/postgres/postgres.service';
+import { PrismaService } from '../../prisma/postgres/prisma.service';
 import { SignUpDTO } from './dto/signup.dto';
 
 /**
@@ -8,8 +8,8 @@ import { SignUpDTO } from './dto/signup.dto';
  * operations using the Postgres database via Prisma.
  */
 @Injectable()
-export class PostgresAuthService {
-  constructor(private pg: PostgresService) {}
+export class UserService {
+  constructor(private pg: PrismaService) {}
 
   /**
    * Retrieves a list of users based on filter, pagination, and sorting parameters.

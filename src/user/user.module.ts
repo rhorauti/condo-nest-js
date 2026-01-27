@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { PostgresService } from '../../prisma/postgres/postgres.service';
+import { PrismaService } from '../../prisma/postgres/prisma.service';
 import { EmailModule } from '../email/email.module';
 import { EmailService } from '../email/email.service';
-import { AuthController } from './auth.controller';
 import { JwtAuthService } from './jwt-auth.service';
-import { PostgresAuthService } from './postgres-auth.service';
 import { JwtStrategy } from './strategies/jwt-strategy';
 import { LocalStrategy } from './strategies/local-strategy';
+import { UserController } from './user.controller';
+import { UserService } from './user.service';
 
 @Module({
   imports: [
@@ -20,15 +20,15 @@ import { LocalStrategy } from './strategies/local-strategy';
     }),
     EmailModule,
   ],
-  controllers: [AuthController],
+  controllers: [UserController],
   providers: [
-    PostgresAuthService,
-    PostgresService,
+    UserService,
+    PrismaService,
     JwtAuthService,
     EmailService,
     LocalStrategy,
     JwtStrategy,
   ],
-  exports: [PostgresAuthService, JwtAuthService],
+  exports: [UserService, JwtAuthService],
 })
-export class AuthModule {}
+export class UserModule {}

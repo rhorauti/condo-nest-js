@@ -142,13 +142,13 @@ model CommentLike {
 model PostMedia {
   idPostMedia       Int    @id @default(autoincrement())
   idPost            Int
-  idComment         Int
+  idComment         Int?
   mediaPath         String
   size              Int?
   format            String?
   
-  post    Post   @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
-  comment Comment   @relation(fields: [idComment], references: [idComment], onDelete: Cascade)
+  post              Post        @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
+  comment           Comment?    @relation(fields: [idComment], references: [idComment], onDelete: Cascade)
   
   @@index([idPost, idComment])
 }

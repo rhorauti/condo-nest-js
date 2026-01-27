@@ -1,13 +1,12 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { PrismaModule } from '../../prisma/postgres/prisma.module';
+import { SupabaseModule } from '../../superbase/superbase.module';
+import { UserModule } from '../user/user.module';
 import { PostsController } from './posts.controller';
 import { PostsService } from './posts.service';
-import { Post, PostSchema } from './schema/post.schema';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
-  ],
+  imports: [SupabaseModule, PrismaModule, UserModule],
   controllers: [PostsController],
   providers: [PostsService],
 })

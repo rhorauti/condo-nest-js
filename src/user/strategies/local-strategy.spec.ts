@@ -1,6 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PostgresAuthService } from '../postgres-auth.service';
+import { UserService } from '../user.service';
 import { LocalStrategy } from './local-strategy';
 
 describe('Local Strategy', () => {
@@ -34,7 +34,7 @@ describe('Local Strategy', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LocalStrategy,
-        { provide: PostgresAuthService, useValue: mockPostgresAuthService },
+        { provide: UserService, useValue: mockPostgresAuthService },
       ],
     }).compile();
 

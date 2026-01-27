@@ -27,7 +27,7 @@ export class CreateOrUpdatePostDto {
   postType: POST_TYPE;
 
   @IsString()
-  description?: string;
+  description: string;
 
   @IsArray()
   @ValidateNested({ each: true })

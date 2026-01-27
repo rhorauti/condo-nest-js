@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Post, Prisma, PrismaClient } from '@prisma/postgres-client';
+import { Post, Prisma } from '@prisma/postgres-client';
+import { PrismaService } from '../../prisma/postgres/prisma.service';
 
 type PostWithUserAndScore = Post & {
   userName: string;
@@ -10,7 +11,7 @@ type PostWithUserAndScore = Post & {
 
 @Injectable()
 export class PostsService {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaService) {}
 
   async getPosts(
     params: {
@@ -99,9 +100,35 @@ export class PostsService {
     });
   }
 
-  async createPost(post: Prisma.PostCreateInput) {
-    return await this.prisma.post.create({
-      data: post,
+  async createPost(post: {
+    idUser: number;
+    postType: number;
+    description: string;
+    createdAt?: Date;
+    mediaList?: { mediaPath: string; size?: number; format?: string }[];
+  }) {
+    const { idUser, mediaList, ...rest } = post;
+
+    return this.prisma.post.create({
+      data: {
+        ...rest,
+        user: {
+          connect: { idUser },
+        },
+        postMedia:
+          mediaList && mediaList.length
+            ? {
+                create: mediaList.map((media) => ({
+                  mediaPath: media.mediaPath,
+                  size: media.size,
+                  format: media.format,
+                })),
+              }
+            : undefined,
+      },
+      include: {
+        postMedia: true,
+      },
     });
   }
 

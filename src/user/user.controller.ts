@@ -3,6 +3,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
+  InternalServerErrorException,
   NotFoundException,
   Post,
   Req,
@@ -20,6 +22,7 @@ import {
   ChangePasswordResponseDTO,
 } from './dto/new-password.dto';
 import { SendRecoveryEmailDTO } from './dto/passowrd-recovery.dto';
+import { SendEmailSignUpDTO } from './dto/sendEmailSignUp.dto';
 import { SignUpDTO, SignUpResponseDTO } from './dto/signup.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -35,7 +38,6 @@ interface IAuthRequest {
 interface IUserAuth extends Request {
   idUser?: number;
   email: string;
-  accessLevel?: number;
 }
 
 /**
@@ -48,7 +50,7 @@ interface IUserAuth extends Request {
 @Controller()
 export class UserController {
   constructor(
-    private readonly postgresAuthService: UserService,
+    private readonly userService: UserService,
     private readonly jwtAuthService: JwtAuthService,
     private readonly emailService: EmailService,
   ) {}
@@ -97,14 +99,13 @@ export class UserController {
     @Req() request: IAuthRequest,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const user = await this.postgresAuthService.getUser({
+    const user = await this.userService.getUser({
       where: { email: request.body.email },
     });
     if (user) {
       const token = this.jwtAuthService.createToken({
         email: user.email,
         idUser: user.idUser,
-        accessLevel: user.accessLevel,
       });
       response.cookie('access_token', token, {
         httpOnly: true,
@@ -116,7 +117,6 @@ export class UserController {
       return {
         name: user.name,
         email: user.email,
-        accessLevel: user.accessLevel,
       };
     } else {
       throw new NotFoundException('Email não encontrado.');
@@ -146,45 +146,87 @@ export class UserController {
   @SuccessMessage('Usuário criado com sucesso.')
   @ErrorMessage('Erro ao criar o usuário')
   async createUser(@Body() userDTO: SignUpDTO): Promise<SignUpResponseDTO> {
-    const user = await this.postgresAuthService.getUser({
-      where: { email: userDTO.email },
-    });
-    if (user) {
-      throw new BadRequestException('O e-mail fornecido já existe.');
-    } else {
-      const hashedPassword = await hash(userDTO.password, 10);
-      userDTO.password = hashedPassword;
-      const createdUser = await this.postgresAuthService.createUser(userDTO);
-      if (createdUser) {
-        const token = this.jwtAuthService.createToken({
-          idUser: createdUser.idUser,
-          email: createdUser.email,
-          accessLevel: createdUser.accessLevel,
+    try {
+      const user = await this.userService.getUser({
+        where: { email: userDTO.email },
+      });
+      if (user) {
+        const hashedPassword = await hash(userDTO.password, 10);
+        userDTO.password = hashedPassword;
+        const userUpdated = await this.userService.updateUser({
+          where: { email: userDTO.email },
+          data: userDTO,
         });
-        const emailData = {
-          email: createdUser.email,
-          name: createdUser.name,
-          token: token,
+        return {
+          idUser: userUpdated ? userUpdated.idUser : 0,
+          name: userUpdated ? userUpdated.name : '',
+          email: userUpdated ? userUpdated.email : '',
+          birthDate:
+            userUpdated && userUpdated.birthDate
+              ? userUpdated.birthDate
+              : new Date(0),
+          agreedWithTerms: userUpdated ? userUpdated.agreedWithTerms : false,
         };
-
-        this.emailService.sendSignUpEmail(emailData).catch((error) => {
-          console.error(
-            `❌ Falha ao enviar e-mail para : ${createdUser.email}`,
-            error,
-          );
-        });
+      } else {
+        throw new BadRequestException(
+          'O email fornecido não está autorizado a realizar o cadastro.',
+        );
       }
-      return {
-        idUser: createdUser ? createdUser.idUser : 0,
-        name: createdUser ? createdUser.name : '',
-        email: createdUser ? createdUser.email : '',
-        birthDate:
-          createdUser && createdUser.birthDate
-            ? createdUser.birthDate
-            : new Date(0),
-        accessLevel: createdUser ? createdUser.accessLevel : 0,
-        agreedWithTerms: createdUser ? createdUser.agreedWithTerms : false,
-      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Erro interno ao criar o usuário.',
+      );
+    }
+  }
+
+  @Post('admin/send-signup-email')
+  @SuccessMessage('Email de cadastro enviado com sucesso.')
+  @ErrorMessage('Erro ao enviar o e-mail de cadastro.')
+  async sendEmailToNewUser(@Body() user: SendEmailSignUpDTO) {
+    let step = 'initial';
+    try {
+      step = 'get-user';
+      const existedUser = await this.userService.getUser({
+        where: { email: user.email },
+      });
+      if (existedUser) {
+        step = 'user-exists';
+        throw new BadRequestException('E-mail já cadastrado.');
+      } else {
+        step = 'create-user';
+        const newUser = await this.userService.createUser(user);
+        if (newUser) {
+          const token = this.jwtAuthService.createToken({
+            email: user.email,
+          });
+          step = 'send-email';
+          await this.emailService.sendSignUpEmail({
+            email: user.email,
+            name: user.name,
+            token: token,
+          });
+          return { email: user.email, name: user.name };
+        }
+      }
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (step == 'get-user') {
+        throw new BadRequestException('Erro ao verificar se o usuário existe.');
+      }
+      if (step == 'user-exists') {
+        throw new BadRequestException('O e-mail fornecido já existe.');
+      }
+      if (step == 'create-user') {
+        throw new BadRequestException('Erro ao criar o usuário.');
+      }
+      if (step == 'send-email') {
+        throw new InternalServerErrorException(
+          'Erro ao enviar o e-mail para cadastro.',
+        );
+      }
+      throw new InternalServerErrorException('Erro interno do servidor.');
     }
   }
 
@@ -213,7 +255,7 @@ export class UserController {
     @Body() userDTO: ChangePasswordDTO,
   ): Promise<ChangePasswordResponseDTO> {
     const email = req.user.email;
-    const user = await this.postgresAuthService.getUser({
+    const user = await this.userService.getUser({
       where: { email: email },
     });
     if (!user) {
@@ -221,7 +263,7 @@ export class UserController {
     } else {
       const hashedPassword = await hash(userDTO.password, 10);
       userDTO.password = hashedPassword;
-      const updatedUser = await this.postgresAuthService.updateUser({
+      const updatedUser = await this.userService.updateUser({
         where: { email: email },
         data: userDTO,
       });
@@ -255,7 +297,7 @@ export class UserController {
   async sendRecoveryEmail(
     @Body() userDTO: SendRecoveryEmailDTO,
   ): Promise<SendRecoveryEmailDTO> {
-    const user = await this.postgresAuthService.getUser({
+    const user = await this.userService.getUser({
       where: { email: userDTO.email },
     });
     if (!user) {
@@ -266,7 +308,6 @@ export class UserController {
       const token = this.jwtAuthService.createToken({
         idUser: user.idUser,
         email: user.email,
-        accessLevel: user.accessLevel,
       });
       const emailData = {
         name: user.name,
@@ -310,7 +351,7 @@ export class UserController {
   ): Promise<Partial<SignUpResponseDTO>> {
     const email = req.user.email;
     const url = req.user.url;
-    const user = await this.postgresAuthService.getUser({
+    const user = await this.userService.getUser({
       where: { email: email },
     });
     if (!user) {
@@ -321,7 +362,7 @@ export class UserController {
           `O email ${user.email} já foi confirmado anteriormente.`,
         );
       } else {
-        const userUpToDate = await this.postgresAuthService.updateUser({
+        const userUpToDate = await this.userService.updateUser({
           where: { email: email },
           data: { isEmailConfirmed: true },
         });
@@ -329,7 +370,6 @@ export class UserController {
           idUser: userUpToDate.idUser,
           name: userUpToDate.name,
           email: userUpToDate.email,
-          accessLevel: userUpToDate.accessLevel,
         };
       }
     }
@@ -351,29 +391,15 @@ export class UserController {
    * POST /token-validation (Headers: Authorization: Bearer <token>)
    */
   @Post('token-validation')
-  @SuccessMessage('E-mail validado com sucesso!')
+  @SuccessMessage('Token validado com sucesso!')
   @UseGuards(JwtAuthGuard)
-  async ValidateToken(
-    @Req() req: IAuthRequest,
-  ): Promise<Partial<SignUpResponseDTO>> {
+  async ValidateToken(@Req() req: IAuthRequest): Promise<void> {
     const email = req.user.email;
-    const url = req.user.url;
-    const user = await this.postgresAuthService.getUser({
+    const user = await this.userService.getUser({
       where: { email: email },
     });
     if (!user) {
       throw new NotFoundException('Usuário não encontrado.');
-    } else {
-      const userUpToDate = await this.postgresAuthService.updateUser({
-        where: { email: email },
-        data: { isEmailConfirmed: true },
-      });
-      return {
-        idUser: userUpToDate.idUser,
-        name: userUpToDate.name,
-        email: userUpToDate.email,
-        accessLevel: userUpToDate.accessLevel,
-      };
     }
   }
 }

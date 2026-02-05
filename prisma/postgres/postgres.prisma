@@ -30,9 +30,9 @@ model User {
   birthDate           DateTime?   @postgres.Timestamptz
   photoPath           String?
   phone               String?
+  isWhattsapp         Boolean
   agreedWithTerms     Boolean     @default(false)
   isActive            Boolean     @default(false)
-  accessLevel         Int         @default(1)
   isEmailConfirmed    Boolean     @default(false)
   createdAt           DateTime    @default(now()) @postgres.Timestamptz
 
@@ -45,8 +45,20 @@ model User {
   comments            Comment[]
   postLike            PostLike[]
   commentLike         CommentLike[]
+  role                Role[]
 
   @@id([idUser], map: "PK_user")
+}
+
+model Role {
+  idRole      Int       @default(autoincrement())
+  name        String    
+  decription  String?
+
+  idUser      Int
+  user        User       @relation(fields: [idUser], references: [idUser])
+
+  @@id([idRole], map: "PK_role")
 }
 
 model Address {
@@ -54,20 +66,20 @@ model Address {
   type        AddressType @default(HOUSE)
   street      String
   number      String?
-  city        String
-  state       String
-  zipCode     String
+  district    String?
+  city        String?
+  state       String?
+  zipCode     String?
   block       String?
   blockType   Int?   
   lot         String?
   lotType     Int?
-  apartament  String?
 
   idUser      Int
   user        User       @relation(fields: [idUser], references: [idUser],  onDelete: Cascade)
 
   idCondo     Int         @unique
-  condo       Condo       @relation(fields: [idCondo], references: [idCondo])
+  condo       Condo       @relation(fields: [idCondo], references: [idCondo], onDelete: Cascade)
 
   @@id([idAddress], map: "PK_address")
 
@@ -80,11 +92,11 @@ model Post {
   createdAt   DateTime  @default(now()) @postgres.Timestamptz
 
   idUser      Int
-  user        User      @relation(fields: [idUser], references: [idUser])
+  user        User      @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
 
   comments    Comment[]
   postLike    PostLike[]
-  postMedia   PostMedia[]
+  postMedia   Media[]
 
   @@id([idPost], map: "PK_post")
   @@index([idUser])  
@@ -98,16 +110,16 @@ model Comment {
   createdAt       DateTime        @default(now()) @postgres.Timestamptz
 
   idUser          Int
-  user            User            @relation(fields: [idUser], references: [idUser])
+  user            User            @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
 
   idPost          Int
-  post            Post            @relation(fields: [idPost], references: [idPost])
+  post            Post            @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
 
   idParent        Int?
-  parent          Comment?        @relation("CommentReplies", fields: [idParent], references: [idComment])
+  parent          Comment?        @relation("CommentReplies", fields: [idParent], references: [idComment], onDelete: Cascade)
   replies         Comment[]       @relation("CommentReplies")
   commentLike     CommentLike[]
-  postMedia       PostMedia[]
+  postMedia       Media[]
 
   @@id([idComment], map: "PK_comment")
   @@index([idPost])  
@@ -120,7 +132,7 @@ model PostLike {
   idUser          Int
   idPost          Int
 
-  user            User    @relation(fields: [idUser], references: [idUser])
+  user            User    @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
   post            Post    @relation(fields: [idPost], references: [idPost],  onDelete: Cascade)
 
   @@unique([idUser, idPost]) 
@@ -132,24 +144,32 @@ model CommentLike {
   idUser            Int
   idComment         Int        
 
-  user              User        @relation(fields: [idUser], references: [idUser])
+  user              User        @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
   comment           Comment     @relation(fields: [idComment], references: [idComment],  onDelete: Cascade)
 
   @@unique([idUser, idComment]) 
   @@index([idComment])
 }
 
-model PostMedia {
-  idPostMedia       Int    @id @default(autoincrement())
-  idPost            Int
+model Media {
+  idMedia           Int         @id @default(autoincrement())
+  idPost            Int?
   idComment         Int?
+  idProduct         Int?
   mediaPath         String
   size              Int?
   format            String?
   
-  post              Post        @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
-  comment           Comment?    @relation(fields: [idComment], references: [idComment], onDelete: Cascade)
+  post              Post?        @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
+  comment           Comment?     @relation(fields: [idComment], references: [idComment], onDelete: Cascade)
+  product           Product?     @relation(fields: [idProduct], references: [idProduct], onDelete: Cascade)
   
   @@index([idPost, idComment])
+}
+
+model Product {
+  idProduct       Int           @id @default(autoincrement())
+  name            String        
+  media           Media[]
 }
 

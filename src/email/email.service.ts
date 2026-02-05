@@ -19,7 +19,7 @@ export class EmailService {
       subject: 'Bem vindo a ConectaCondo.',
       react: SignUpEmail({
         name: name,
-        url: `${process.env.FRONTEND_URL}/redirect?token=${token}`,
+        url: `${process.env.FRONTEND_URL}/web/signup?email=${email}&name=${name}&token=${token}`,
       }),
     });
   }

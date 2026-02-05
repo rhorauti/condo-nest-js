@@ -9,9 +9,7 @@ interface ITokenPayload {
   /** The user's email address */
   email: string;
   /** The unique numeric identifier for the user */
-  idUser: number;
-  /** The numeric access level (role) of the user */
-  accessLevel: number;
+  idUser?: number;
 }
 
 /**
@@ -50,7 +48,6 @@ export class JwtAuthService {
     const payload = {
       email: user.email,
       idUser: user.idUser,
-      accessLevel: user.accessLevel,
     };
 
     return this.jwtService.sign(payload, {

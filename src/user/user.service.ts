@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/postgres-client/client';
 import { PrismaService } from '../../prisma/postgres/prisma.service';
-import { SignUpDTO } from './dto/signup.dto';
+import { SendEmailSignUpDTO } from './dto/sendEmailSignUp.dto';
 
 /**
  * Service responsible for managing User authentication and persistence
@@ -70,23 +70,13 @@ export class UserService {
    * select: { name: true }
    * });
    */
-  async getUser(
-    params: {
-      skip?: number;
-      take?: number;
-      cursor?: Prisma.UserWhereUniqueInput;
-      where?: Prisma.UserWhereUniqueInput;
-      orderBy?: Prisma.UserOrderByWithRelationInput;
-      select?: Prisma.UserSelect;
-    } = {},
-  ) {
-    const { skip, take, cursor, where, orderBy, select } = params;
-    return await this.pg.user.findFirst({
-      skip,
-      take,
-      cursor,
+  async getUser(params: {
+    where: Prisma.UserWhereUniqueInput;
+    select?: Prisma.UserSelect;
+  }) {
+    const { where, select } = params;
+    return await this.pg.user.findUnique({
       where,
-      orderBy,
       select,
     });
   }
@@ -114,10 +104,11 @@ export class UserService {
    * agreedWithTerms: true
    * });
    */
-  async createUser(userDTO: SignUpDTO) {
+  async createUser(user: SendEmailSignUpDTO) {
     const userToBeCreated: Prisma.UserCreateInput = {
-      ...userDTO,
-      accessLevel: 1,
+      ...user,
+      password: '',
+      isWhattsapp: false,
       isActive: true,
       isEmailConfirmed: false,
       photoPath: null,

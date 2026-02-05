@@ -56,8 +56,7 @@ export class SignUpResponseDTO {
   birthDate: Date;
 
   @Expose()
-  accessLevel: number;
-
-  @Expose()
   agreedWithTerms: boolean;
 }
+
+export class AdminSignUpDTO {}

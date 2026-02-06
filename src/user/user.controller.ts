@@ -3,7 +3,6 @@ import {
   Body,
   Controller,
   Get,
-  HttpException,
   InternalServerErrorException,
   NotFoundException,
   Post,
@@ -12,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { User } from '@prisma/client';
+import { Prisma } from '@prisma/postgres-client/client';
 import { hash } from 'bcrypt';
 import type { Request, Response } from 'express';
 import { ErrorMessage } from '../core/decorators/error-message.decorator';
@@ -23,7 +23,7 @@ import {
 } from './dto/new-password.dto';
 import { SendRecoveryEmailDTO } from './dto/passowrd-recovery.dto';
 import { SendEmailSignUpDTO } from './dto/sendEmailSignUp.dto';
-import { SignUpDTO, SignUpResponseDTO } from './dto/signup.dto';
+import { SignUpDTO } from './dto/signup.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthService } from './jwt-auth.service';
@@ -74,6 +74,14 @@ export class UserController {
     };
   }
 
+  setFallbackName = (name: string): string => {
+    const parts = name.trim().split(' ').filter(Boolean);
+    if (parts.length > 1) {
+      return parts[0][0].toUpperCase() + parts[1][0].toUpperCase();
+    }
+    return '';
+  };
+
   /**
    * Authenticates a user via email and password (handled by `LocalAuthGuard`).
    * If successful, it generates a JWT, sets it as an HTTP-only cookie, and returns user info.
@@ -102,7 +110,9 @@ export class UserController {
     const user = await this.userService.getUser({
       where: { email: request.body.email },
     });
-    if (user) {
+    if (!user) {
+      throw new BadRequestException('Usuário não encontrado para este e-mail.');
+    } else {
       const token = this.jwtAuthService.createToken({
         email: user.email,
         idUser: user.idUser,
@@ -115,12 +125,24 @@ export class UserController {
       });
 
       return {
+        idUser: user.idUser,
         name: user.name,
         email: user.email,
+        fallbackName: this.setFallbackName(user.name),
+        createdAt: user.createdAt,
+        birthDate: user.birthDate,
+        isActive: user.isActive,
       };
-    } else {
-      throw new NotFoundException('Email não encontrado.');
     }
+  }
+
+  capitalizeFullName(name: string): string {
+    return name
+      .toLowerCase()
+      .split(' ')
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   }
 
   /**
@@ -145,89 +167,105 @@ export class UserController {
   @Post('signup')
   @SuccessMessage('Usuário criado com sucesso.')
   @ErrorMessage('Erro ao criar o usuário')
-  async createUser(@Body() userDTO: SignUpDTO): Promise<SignUpResponseDTO> {
-    try {
-      const user = await this.userService.getUser({
+  async createUser(
+    @Body() userDTO: SignUpDTO,
+  ): Promise<Omit<SignUpDTO, 'password'> & { idUser: number }> {
+    const user = await this.userService.getUser({
+      where: { email: userDTO.email },
+    });
+    if (!user) {
+      throw new BadRequestException('Email não autorizado para cadastro.');
+    } else {
+      const hashedPassword = await hash(userDTO.password, 10);
+      const userToBeCreated = {
+        ...userDTO,
+        password: hashedPassword,
+        name: this.capitalizeFullName(userDTO.name),
+        isActive: true,
+      };
+      const userToBeUpdated = await this.userService.updateUser({
         where: { email: userDTO.email },
+        data: userToBeCreated,
       });
-      if (user) {
-        const hashedPassword = await hash(userDTO.password, 10);
-        userDTO.password = hashedPassword;
-        const userUpdated = await this.userService.updateUser({
-          where: { email: userDTO.email },
-          data: userDTO,
-        });
-        return {
-          idUser: userUpdated ? userUpdated.idUser : 0,
-          name: userUpdated ? userUpdated.name : '',
-          email: userUpdated ? userUpdated.email : '',
-          birthDate:
-            userUpdated && userUpdated.birthDate
-              ? userUpdated.birthDate
-              : new Date(0),
-          agreedWithTerms: userUpdated ? userUpdated.agreedWithTerms : false,
-        };
-      } else {
-        throw new BadRequestException(
-          'O email fornecido não está autorizado a realizar o cadastro.',
-        );
-      }
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Erro interno ao criar o usuário.',
-      );
+      return {
+        idUser: userToBeUpdated.idUser,
+        name: userToBeUpdated.name,
+        email: userToBeUpdated.email,
+        birthDate: userToBeUpdated.birthDate
+          ? userToBeUpdated.birthDate
+          : new Date(),
+        agreedWithTerms: userToBeUpdated.agreedWithTerms,
+      };
     }
   }
 
-  @Post('admin/send-signup-email')
+  generateSecureTempPassword(length = 10): string {
+    const chars =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*';
+    const array = new Uint8Array(length);
+    crypto.getRandomValues(array);
+    let password = '';
+
+    for (let i = 0; i < length; i++) {
+      const index = array[i] % chars.length;
+      password += chars[index];
+    }
+
+    return password;
+  }
+
+  @Post('send-signup-email')
   @SuccessMessage('Email de cadastro enviado com sucesso.')
   @ErrorMessage('Erro ao enviar o e-mail de cadastro.')
   async sendEmailToNewUser(@Body() user: SendEmailSignUpDTO) {
-    let step = 'initial';
-    try {
-      step = 'get-user';
-      const existedUser = await this.userService.getUser({
-        where: { email: user.email },
-      });
-      if (existedUser) {
-        step = 'user-exists';
-        throw new BadRequestException('E-mail já cadastrado.');
-      } else {
-        step = 'create-user';
-        const newUser = await this.userService.createUser(user);
-        if (newUser) {
-          const token = this.jwtAuthService.createToken({
-            email: user.email,
-          });
-          step = 'send-email';
+    const existedUser = await this.userService.getUser({
+      where: { email: user.email },
+    });
+    if (existedUser) {
+      throw new BadRequestException('E-mail já cadastrado.');
+    } else {
+      let newUser;
+      const userToBeCreated: Prisma.UserCreateInput = {
+        ...user,
+        name: this.capitalizeFullName(user.name),
+        password: this.generateSecureTempPassword(),
+      };
+      try {
+        newUser = await this.userService.createUser(userToBeCreated);
+      } catch (error) {
+        throw new InternalServerErrorException('Erro ao criar o usuário.');
+      }
+      if (newUser) {
+        const token = this.jwtAuthService.createToken({
+          email: user.email,
+        });
+        try {
           await this.emailService.sendSignUpEmail({
             email: user.email,
             name: user.name,
             token: token,
           });
-          return { email: user.email, name: user.name };
+        } catch (error) {
+          throw new InternalServerErrorException(
+            'Erro ao enviar o e-mail de cadastro.',
+          );
         }
+        return { email: user.email, name: user.name };
       }
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      if (step == 'get-user') {
-        throw new BadRequestException('Erro ao verificar se o usuário existe.');
-      }
-      if (step == 'user-exists') {
-        throw new BadRequestException('O e-mail fornecido já existe.');
-      }
-      if (step == 'create-user') {
-        throw new BadRequestException('Erro ao criar o usuário.');
-      }
-      if (step == 'send-email') {
-        throw new InternalServerErrorException(
-          'Erro ao enviar o e-mail para cadastro.',
-        );
-      }
-      throw new InternalServerErrorException('Erro interno do servidor.');
     }
+  }
+
+  @Get('users/:idUser')
+  @UseGuards(JwtAuthGuard)
+  @SuccessMessage('Dados do usuário recebido com sucesso.')
+  @ErrorMessage('Erro ao buscar os dados do usuário.')
+  async getUser(@Body() idUser: number) {
+    const user = await this.userService.getUser({ where: { idUser: idUser } });
+    if (!user) {
+      throw new BadRequestException('Usuário não encontrado.');
+    }
+    const { password, ...rest } = user;
+    return rest;
   }
 
   /**
@@ -328,59 +366,8 @@ export class UserController {
   }
 
   /**
-   * Validates a user's email address using a token.
-   *
-   * @remarks
-   * This endpoint is typically hit when a user clicks a link in their verification email.
-   * It checks if the email is already confirmed to prevent double-processing.
-   *
-   * @param req - The request object containing the user's email from the JWT.
-   * @returns Partial user data confirming the validation.
-   *
-   * @throws {NotFoundException} If user is not found.
-   * @throws {BadRequestException} If email is already confirmed.
-   *
-   * @example
-   * POST /validate-email (Headers: Authorization: Bearer <verification_token>)
-   */
-  @Post('validate-email')
-  @SuccessMessage('E-mail validado com sucesso!')
-  @UseGuards(JwtAuthGuard)
-  async ValidateEmail(
-    @Req() req: IAuthRequest,
-  ): Promise<Partial<SignUpResponseDTO>> {
-    const email = req.user.email;
-    const url = req.user.url;
-    const user = await this.userService.getUser({
-      where: { email: email },
-    });
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
-    } else {
-      if (user.isEmailConfirmed) {
-        throw new BadRequestException(
-          `O email ${user.email} já foi confirmado anteriormente.`,
-        );
-      } else {
-        const userUpToDate = await this.userService.updateUser({
-          where: { email: email },
-          data: { isEmailConfirmed: true },
-        });
-        return {
-          idUser: userUpToDate.idUser,
-          name: userUpToDate.name,
-          email: userUpToDate.email,
-        };
-      }
-    }
-  }
-
-  /**
    * Generic token validation endpoint.
    *
-   * @remarks
-   * Functionally similar to `ValidateEmail`, this endpoint confirms the email
-   * associated with the provided JWT token. It updates the `isEmailConfirmed` status.
    *
    * @param req - The request object containing the user's email from the JWT.
    * @returns Partial user data.

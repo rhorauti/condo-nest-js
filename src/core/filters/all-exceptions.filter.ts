@@ -36,12 +36,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       : undefined;
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let finalMessage: string | string[] = 'An internal server error occurred';
+    let finalMessage: string | string[] = 'Erro interno do servidor';
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
 
       const exceptionResponse = exception.getResponse();
+
       if (
         typeof exceptionResponse === 'object' &&
         exceptionResponse !== null &&
@@ -80,13 +81,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       finalMessage = customMessage || 'An internal server error occurred';
     }
 
-    // ... (Sua conversão de Array para string e resposta final)
-
     if (Array.isArray(finalMessage)) {
       finalMessage = finalMessage.join(', ');
     }
 
-    console.log('error message: ' + finalMessage);
+    console.log('Mensagem de erro: ' + finalMessage);
 
     response.status(status).json({
       status: false,

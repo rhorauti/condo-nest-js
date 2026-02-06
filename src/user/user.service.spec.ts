@@ -45,9 +45,9 @@ const mockUsers: User[] = [
     birthDate: new Date('2000-12-01T02:00:00.000Z'),
     photoPath: null,
     agreedWithTerms: true,
+    isWhattsapp: false,
+    phone: '5511941221211',
     isActive: true,
-    accessLevel: 1,
-    isEmailConfirmed: false,
     createdAt: new Date(),
   },
   {
@@ -57,10 +57,10 @@ const mockUsers: User[] = [
     password: 'alsçkdsaçlkdj23!#',
     birthDate: new Date('2000-12-01T02:00:00.000Z'),
     photoPath: null,
+    isWhattsapp: false,
+    phone: '5511941221211',
     agreedWithTerms: true,
     isActive: true,
-    accessLevel: 1,
-    isEmailConfirmed: false,
     createdAt: new Date(),
   },
 ];
@@ -72,10 +72,10 @@ const mockUser: User = {
   password: 'alsçkdsaçlkdj23!#',
   birthDate: new Date('2000-12-01T02:00:00.000Z'),
   photoPath: null,
+  isWhattsapp: false,
+  phone: '5511941221211',
   agreedWithTerms: true,
   isActive: true,
-  accessLevel: 1,
-  isEmailConfirmed: false,
   createdAt: new Date(),
 };
 
@@ -88,10 +88,10 @@ describe('Postgres Auth Service', () => {
     const mockUser: User = {
       idUser: 1,
       ...mockUserDTO,
-      accessLevel: 1,
       isActive: false,
-      isEmailConfirmed: true,
       photoPath: null,
+      isWhattsapp: false,
+      phone: '5511941221211',
       createdAt: new Date(),
     };
 
@@ -104,7 +104,6 @@ describe('Postgres Auth Service', () => {
         ...mockUserDTO,
         accessLevel: 1,
         isActive: true,
-        isEmailConfirmed: false,
         photoPath: null,
       },
     });
@@ -182,39 +181,11 @@ describe('Postgres Auth Service', () => {
     });
   });
 
-  it('it should get user with no params', async () => {
-    mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
-
-    const result = await service.getUser({
-      where: undefined,
-      skip: undefined,
-      take: undefined,
-      cursor: undefined,
-      orderBy: undefined,
-      select: undefined,
-    });
-
-    expect(mockPrismaService.user.findFirst).toHaveBeenCalledTimes(1);
-    expect(result).toEqual(mockUser);
-    expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
-      where: undefined,
-      skip: undefined,
-      take: undefined,
-      cursor: undefined,
-      orderBy: undefined,
-      select: undefined,
-    });
-  });
-
   it('it should get user with all params', async () => {
     mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
 
     const result = await service.getUser({
       where: { idUser: 50 },
-      skip: 1,
-      take: 10,
-      cursor: { idUser: 50 },
-      orderBy: { idUser: 'desc' },
       select: { idUser: true, name: true },
     });
 

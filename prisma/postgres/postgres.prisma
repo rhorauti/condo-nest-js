@@ -15,11 +15,24 @@ enum AddressType {
 model Condo {
   idCondo  Int     @default(autoincrement())
   name     String  @unique(map: "UQ_condo_name")
-  
-  users    User[]
+
+  users    UserCondo[]
   address  Address?
 
   @@id([idCondo], map: "PK_condo")
+}
+
+model UserCondo {
+  idUser   Int
+  idCondo  Int
+
+  user     User   @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
+  condo    Condo  @relation(fields: [idCondo], references: [idCondo], onDelete: Cascade)
+
+  joinedAt DateTime @default(now()) @postgres.Timestamptz
+
+  @@id([idUser, idCondo])
+  @@map("user_condo")
 }
 
 model User {
@@ -30,24 +43,32 @@ model User {
   birthDate           DateTime?   @postgres.Timestamptz
   photoPath           String?
   phone               String?
-  isWhattsapp         Boolean
+  isWhattsapp         Boolean     @default(false)
   agreedWithTerms     Boolean     @default(false)
   isActive            Boolean     @default(false)
-  isEmailConfirmed    Boolean     @default(false)
   createdAt           DateTime    @default(now()) @postgres.Timestamptz
 
   address             Address[]
-
-  idCondo             Int?
-  condo               Condo?    @relation(fields: [idCondo], references: [idCondo])
 
   posts               Post[]
   comments            Comment[]
   postLike            PostLike[]
   commentLike         CommentLike[]
-  role                Role[]
+  condos              UserCondo[]
+  roles               UserRole[]
 
   @@id([idUser], map: "PK_user")
+}
+
+model UserRole {
+  idUser Int
+  idRole Int
+
+  user   User @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
+  role   Role @relation(fields: [idRole], references: [idRole], onDelete: Cascade)
+
+  @@id([idUser, idRole])
+  @@map("user_role")
 }
 
 model Role {
@@ -55,8 +76,7 @@ model Role {
   name        String    
   decription  String?
 
-  idUser      Int
-  user        User       @relation(fields: [idUser], references: [idUser])
+  users       UserRole[]
 
   @@id([idRole], map: "PK_role")
 }

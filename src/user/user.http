@@ -1,0 +1,39 @@
+@baseUrl = http://localhost:3000/v1
+
+### Send e-mail to sign up a new user.
+POST {{baseUrl}}/send-signup-email
+Content-Type: application/json
+
+{
+    "name": "Rafael Horauti",
+    "email": "rafael.horauti@gmail.com"
+}
+
+
+### Sign up a new user.
+POST {{baseUrl}}/signup
+Content-Type: application/json
+
+{
+    "name": "Rafael Horauti",
+    "email": "rafael.horauti@gmail.com",
+    "password": "Teste123!",
+    "birthDate": "1984-02-28T00:00:00.000Z",
+    "agreedWithTerms": true
+}
+
+### Get CSRF
+GET {{baseUrl}}/csrf-token
+
+# @csrfToken = {{response.headers.x-csrf-token}}
+
+
+### Login a user.
+POST {{baseUrl}}/login
+Content-Type: application/json
+# X-CSRF-Token: {{csrfToken}}
+
+{
+    "email": "rafael.horauti@gmail.com",
+    "password": "Teste123!"
+}

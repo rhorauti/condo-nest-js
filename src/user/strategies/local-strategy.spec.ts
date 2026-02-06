@@ -25,7 +25,6 @@ describe('Local Strategy', () => {
     agreedWithTerms: true,
     isActive: true,
     accessLevel: 1,
-    isEmailConfirmed: false,
     createdAt: new Date(),
   };
 

@@ -31,7 +31,7 @@ export class EmailService {
       subject: 'Bem vindo a ConectaCondo.',
       react: PasswordRecoveryEmail({
         name: name,
-        url: `${process.env.FRONTEND_URL}/new-password?token=${token}`,
+        url: `${process.env.FRONTEND_URL}/web/new-password?token=${token}`,
       }),
     });
   }

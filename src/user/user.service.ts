@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/postgres-client/client';
 import { PrismaService } from '../../prisma/postgres/prisma.service';
-import { SendEmailSignUpDTO } from './dto/sendEmailSignUp.dto';
 
 /**
  * Service responsible for managing User authentication and persistence
@@ -9,7 +8,7 @@ import { SendEmailSignUpDTO } from './dto/sendEmailSignUp.dto';
  */
 @Injectable()
 export class UserService {
-  constructor(private pg: PrismaService) {}
+  constructor(private prismaService: PrismaService) {}
 
   /**
    * Retrieves a list of users based on filter, pagination, and sorting parameters.
@@ -44,7 +43,7 @@ export class UserService {
     } = {},
   ) {
     const { skip, take, cursor, where, orderBy, select } = params;
-    return await this.pg.user.findMany({
+    return await this.prismaService.user.findMany({
       skip,
       take,
       cursor,
@@ -75,7 +74,7 @@ export class UserService {
     select?: Prisma.UserSelect;
   }) {
     const { where, select } = params;
-    return await this.pg.user.findUnique({
+    return await this.prismaService.user.findUnique({
       where,
       select,
     });
@@ -88,7 +87,6 @@ export class UserService {
    * This method automatically sets default system values:
    * - `accessLevel`: 1 (Standard User)
    * - `isActive`: true
-   * - `isEmailConfirmed`: false
    * - `photoPath`: null
    *
    * @param userDTO - The Data Transfer Object containing user registration data.
@@ -104,17 +102,9 @@ export class UserService {
    * agreedWithTerms: true
    * });
    */
-  async createUser(user: SendEmailSignUpDTO) {
-    const userToBeCreated: Prisma.UserCreateInput = {
-      ...user,
-      password: '',
-      isWhattsapp: false,
-      isActive: true,
-      isEmailConfirmed: false,
-      photoPath: null,
-    };
-    return await this.pg.user.create({
-      data: userToBeCreated,
+  async createUser(user: Prisma.UserCreateInput) {
+    return await this.prismaService.user.create({
+      data: user,
     });
   }
 
@@ -131,7 +121,6 @@ export class UserService {
    * // Update user 50 to confirm their email
    * const updated = await service.updateUser({
    * where: { idUser: 50 },
-   * data: { isEmailConfirmed: true }
    * });
    */
   async updateUser(params: {
@@ -139,7 +128,7 @@ export class UserService {
     data: Prisma.UserUpdateInput;
   }) {
     const { where, data } = params;
-    return await this.pg.user.update({ where: where, data: data });
+    return await this.prismaService.user.update({ where: where, data: data });
   }
 
   /**
@@ -152,6 +141,6 @@ export class UserService {
    * await service.deleteUser(50);
    */
   async deleteUser(idUser: number) {
-    return await this.pg.user.delete({ where: { idUser: idUser } });
+    return await this.prismaService.user.delete({ where: { idUser: idUser } });
   }
 }

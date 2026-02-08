@@ -1,14 +1,8 @@
-import {
-  IsBoolean,
-  IsEmail,
-  IsNotEmpty,
-  IsString,
-  Matches,
-  MinLength,
-} from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsString, Matches } from 'class-validator';
 import { IsAgeValid } from '../validation/user-birthday/is-birthday-valid.decorator';
+import { LoginDTO } from './login.dto';
 
-export class SignUpDTO {
+export class SignUpDTO extends LoginDTO {
   @IsNotEmpty({ message: 'O campo nome não pode estar vazio.' })
   @IsString({ message: 'Formato inválido.' })
   @Matches(/^[A-Za-zÀ-ÖØ-öø-ÿ]{2,}(\s+[A-Za-zÀ-ÖØ-öø-ÿ]+)+$/, {
@@ -16,21 +10,6 @@ export class SignUpDTO {
       'Informe pelo menos nome e sobrenome, e o primeiro nome deve ter no mínimo 2 letras.',
   })
   name!: string;
-
-  @IsEmail({}, { message: 'Formato de e-mail inválido.' })
-  @IsNotEmpty({ message: 'O campo de e-mail não pode estar vazio.' })
-  email!: string;
-
-  @IsString({ message: 'Formato de senha inválida.' })
-  @IsNotEmpty({ message: 'O campo de senha não pode estar vazio.' })
-  @MinLength(6, {
-    message: 'O campo de senha deve ter no mínimo 6 caracteres.',
-  })
-  @Matches(/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/, {
-    message:
-      'A senha deve conter ao menos 1 letra maiúscula, 1 número e 1 símbolo.',
-  })
-  password!: string;
 
   @IsAgeValid()
   birthDate!: Date;

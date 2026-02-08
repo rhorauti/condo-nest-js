@@ -1,7 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import 'dotenv/config';
-import { AddressesModule } from './addresses/addresses.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CondoModule } from './condo/condo.module';
@@ -14,7 +13,6 @@ import { UserModule } from './user/user.module';
     ConfigModule.forRoot({ isGlobal: true }),
     UserModule,
     PostsModule,
-    AddressesModule,
     CondoModule,
   ],
   controllers: [AppController],

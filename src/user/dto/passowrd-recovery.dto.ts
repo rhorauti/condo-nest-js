@@ -1,7 +1,4 @@
-import { IsEmail, IsNotEmpty } from 'class-validator';
+import { OmitType } from '@nestjs/mapped-types';
+import { LoginDTO } from './login.dto';
 
-export class SendRecoveryEmailDTO {
-  @IsEmail({}, { message: 'Formato de e-mail inválido.' })
-  @IsNotEmpty({ message: 'O campo de e-mail não pode estar vazio.' })
-  email!: string;
-}
+export class SendRecoveryEmailDTO extends OmitType(LoginDTO, ['password']) {}

@@ -1,13 +1,12 @@
-import { Type } from 'class-transformer';
 import {
   IsBoolean,
-  IsDate,
   IsEmail,
   IsNotEmpty,
   IsString,
   Matches,
   MinLength,
 } from 'class-validator';
+import { IsAgeValid } from '../validation/user-birthday/is-birthday-valid.decorator';
 
 export class SignUpDTO {
   @IsNotEmpty({ message: 'O campo nome não pode estar vazio.' })
@@ -33,10 +32,8 @@ export class SignUpDTO {
   })
   password!: string;
 
-  @IsDate({ message: 'Formato de data inválido.' })
-  @IsNotEmpty({ message: 'O campo data de nascimento não pode estar vazio.' })
-  @Type(() => Date)
-  birthDate?: Date;
+  @IsAgeValid()
+  birthDate!: Date;
 
   @IsBoolean({ message: 'Formato do campo de aceite dos termos inválido.' })
   @IsNotEmpty({

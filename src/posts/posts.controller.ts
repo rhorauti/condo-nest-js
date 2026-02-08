@@ -11,7 +11,7 @@ import { SuperbaseStorageService } from '../../superbase/superbase-storage.servi
 import { ErrorMessage } from '../core/decorators/error-message.decorator';
 import { SuccessMessage } from '../core/decorators/response-message.decorator';
 import { JwtAuthGuard } from '../user/guards/jwt-auth.guard';
-import { UserService } from '../user/user.service';
+import { UserService } from '../user/services/user.service';
 import { CreateOrUpdatePostDto } from './dto/post.dto';
 import { PostsService } from './posts.service';
 

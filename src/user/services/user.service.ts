@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/postgres-client/client';
-import { PrismaService } from '../../prisma/postgres/prisma.service';
+import { PrismaService } from '../../../prisma/postgres/prisma.service';
 
 /**
  * Service responsible for managing User authentication and persistence
@@ -71,12 +71,14 @@ export class UserService {
    */
   async getUser(params: {
     where: Prisma.UserWhereUniqueInput;
+    include?: Prisma.UserInclude;
     select?: Prisma.UserSelect;
   }) {
-    const { where, select } = params;
-    return await this.prismaService.user.findUnique({
+    const { where, include, select } = params;
+    return this.prismaService.user.findUnique({
       where,
-      select,
+      ...(select ? { select } : {}),
+      ...(include ? { include } : {}),
     });
   }
 

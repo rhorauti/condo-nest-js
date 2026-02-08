@@ -8,26 +8,28 @@ import {
   Post,
   Req,
   Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { User } from '@prisma/client';
-import { Prisma } from '@prisma/postgres-client/client';
+import { Prisma, USER_ROLES } from '@prisma/postgres-client/client';
 import { hash } from 'bcrypt';
 import type { Request, Response } from 'express';
-import { ErrorMessage } from '../core/decorators/error-message.decorator';
-import { SuccessMessage } from '../core/decorators/response-message.decorator';
-import { EmailService } from '../email/email.service';
+import { ErrorMessage } from '../../core/decorators/error-message.decorator';
+import { SuccessMessage } from '../../core/decorators/response-message.decorator';
+import { EmailService } from '../../email/email.service';
+import { Roles } from '../decorator/roles.decorator';
 import {
   ChangePasswordDTO,
   ChangePasswordResponseDTO,
-} from './dto/new-password.dto';
-import { SendRecoveryEmailDTO } from './dto/passowrd-recovery.dto';
-import { SendEmailSignUpDTO } from './dto/sendEmailSignUp.dto';
-import { SignUpDTO } from './dto/signup.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { LocalAuthGuard } from './guards/local-auth.guard';
-import { JwtAuthService } from './jwt-auth.service';
-import { UserService } from './user.service';
+} from '../dto/new-password.dto';
+import { SendRecoveryEmailDTO } from '../dto/passowrd-recovery.dto';
+import { SendEmailSignUpDTO } from '../dto/sendEmailSignUp.dto';
+import { SignUpDTO } from '../dto/signup.dto';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { LocalAuthGuard } from '../guards/local-auth.guard';
+import { JwtAuthService } from '../services/jwt-auth.service';
+import { UserService } from '../services/user.service';
 
 interface IAuthRequest {
   user: IUserAuth;
@@ -116,6 +118,7 @@ export class UserController {
       const token = this.jwtAuthService.createToken({
         email: user.email,
         idUser: user.idUser,
+        role: user.role,
       });
       response.cookie('access_token', token, {
         httpOnly: true,
@@ -143,6 +146,44 @@ export class UserController {
       .filter(Boolean)
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
+  }
+
+  @Get('account/me')
+  @UseGuards(JwtAuthGuard)
+  @SuccessMessage('Dados do usuário autenticado enviados com sucesso.')
+  @ErrorMessage('Erro ao enviar os dados do usuário autenticado.')
+  async getAuthUserInfo(@Req() req: IAuthRequest) {
+    const idUser = req.user.idUser;
+    const user = await this.userService.getUser({ where: { idUser: idUser } });
+    if (!user) {
+      throw new UnauthorizedException('Usuário não autorizado.');
+    } else {
+      return {
+        idUser: user.idUser,
+        email: user.email,
+        name: user.name,
+        photoUrl: user.photoPath,
+        fallbackName: this.setFallbackName(user.name),
+      };
+    }
+  }
+
+  @Get('profiles/me/detail')
+  @UseGuards(JwtAuthGuard)
+  @SuccessMessage('Dados do usuário autenticado enviados com sucesso.')
+  @ErrorMessage('Erro ao enviar os dados do usuário autenticado.')
+  async getDetailedAuthUserInfo(@Req() req: IAuthRequest) {
+    const idUser = req.user.idUser;
+    const user = await this.userService.getUser({
+      where: { idUser: idUser },
+      include: { address: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Usuário não autorizado.');
+    } else {
+      const { password, ...rest } = user;
+      return rest;
+    }
   }
 
   /**
@@ -215,6 +256,7 @@ export class UserController {
   }
 
   @Post('send-signup-email')
+  @Roles(USER_ROLES.ADMIN, USER_ROLES.ADMIN_ROOT)
   @SuccessMessage('Email de cadastro enviado com sucesso.')
   @ErrorMessage('Erro ao enviar o e-mail de cadastro.')
   async sendEmailToNewUser(@Body() user: SendEmailSignUpDTO) {
@@ -238,6 +280,7 @@ export class UserController {
       if (newUser) {
         const token = this.jwtAuthService.createToken({
           email: user.email,
+          role: user.role,
         });
         try {
           await this.emailService.sendSignUpEmail({
@@ -253,19 +296,6 @@ export class UserController {
         return { email: user.email, name: user.name };
       }
     }
-  }
-
-  @Get('users/:idUser')
-  @UseGuards(JwtAuthGuard)
-  @SuccessMessage('Dados do usuário recebido com sucesso.')
-  @ErrorMessage('Erro ao buscar os dados do usuário.')
-  async getUser(@Body() idUser: number) {
-    const user = await this.userService.getUser({ where: { idUser: idUser } });
-    if (!user) {
-      throw new BadRequestException('Usuário não encontrado.');
-    }
-    const { password, ...rest } = user;
-    return rest;
   }
 
   /**
@@ -346,6 +376,7 @@ export class UserController {
       const token = this.jwtAuthService.createToken({
         idUser: user.idUser,
         email: user.email,
+        role: user.role,
       });
       const emailData = {
         name: user.name,

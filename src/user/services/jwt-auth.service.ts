@@ -1,16 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-
-/**
- * Interface defining the shape of the data embedded inside the JWT.
- */
-interface ITokenPayload {
-  /** The user's email address */
-  email: string;
-  /** The unique numeric identifier for the user */
-  idUser?: number;
-}
+import { ITokenPayload } from '../../core/interfaces/jwt.interface';
 
 /**
  * **JwtAuthService**
@@ -48,6 +39,7 @@ export class JwtAuthService {
     const payload = {
       email: user.email,
       idUser: user.idUser,
+      role: user.role,
     };
 
     return this.jwtService.sign(payload, {

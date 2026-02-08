@@ -35,6 +35,12 @@ model UserCondo {
   @@map("user_condo")
 }
 
+enum USER_ROLES {
+  USER
+  ADMIN
+  ADMIN_ROOT
+}
+
 model User {
   idUser              Int         @default(autoincrement())
   email               String      @unique(map: "UQ_user_email")
@@ -42,6 +48,7 @@ model User {
   name                String
   birthDate           DateTime?   @postgres.Timestamptz
   photoPath           String?
+  role                USER_ROLES
   phone               String?
   isWhattsapp         Boolean     @default(false)
   agreedWithTerms     Boolean     @default(false)
@@ -55,30 +62,8 @@ model User {
   postLike            PostLike[]
   commentLike         CommentLike[]
   condos              UserCondo[]
-  roles               UserRole[]
 
   @@id([idUser], map: "PK_user")
-}
-
-model UserRole {
-  idUser Int
-  idRole Int
-
-  user   User @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
-  role   Role @relation(fields: [idRole], references: [idRole], onDelete: Cascade)
-
-  @@id([idUser, idRole])
-  @@map("user_role")
-}
-
-model Role {
-  idRole      Int       @default(autoincrement())
-  name        String    
-  decription  String?
-
-  users       UserRole[]
-
-  @@id([idRole], map: "PK_role")
 }
 
 model Address {

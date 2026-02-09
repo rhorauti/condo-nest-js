@@ -15,6 +15,7 @@ import type { Request, Response } from 'express';
 import { ErrorMessage } from '../../core/decorators/error-message.decorator';
 import { SuccessMessage } from '../../core/decorators/response-message.decorator';
 import { EmailService } from '../../email/email.service';
+import { Public } from '../decorator/public.decorator';
 import { ChangePasswordDTO } from '../dto/new-password.dto';
 import { SendRecoveryEmailDTO } from '../dto/passowrd-recovery.dto';
 import { SignUpDTO } from '../dto/signup.dto';
@@ -93,6 +94,7 @@ export class AuthController {
    * POST /login
    * Body: { "email": "user@example.com", "password": "secretPassword" }
    */
+  @Public()
   @Post('login')
   @UseGuards(LocalAuthGuard)
   @SuccessMessage('Usuário logado com sucesso.')

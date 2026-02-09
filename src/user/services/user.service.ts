@@ -128,9 +128,14 @@ export class UserService {
   async updateUser(params: {
     where: Prisma.UserWhereUniqueInput;
     data: Prisma.UserUpdateInput;
+    include?: Prisma.UserInclude;
   }) {
-    const { where, data } = params;
-    return await this.prismaService.user.update({ where: where, data: data });
+    const { where, data, include } = params;
+    return await this.prismaService.user.update({
+      where,
+      data,
+      include,
+    });
   }
 
   /**

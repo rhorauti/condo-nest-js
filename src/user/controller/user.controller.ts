@@ -8,7 +8,6 @@ import {
   Req,
   UnauthorizedException,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -17,13 +16,14 @@ import { Prisma, USER_ROLES } from '@prisma/postgres-client/client';
 import { plainToInstance } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 import type { Request } from 'express';
+import { SuperbaseStorageService } from '../../../superbase/superbase-storage.service';
 import { ErrorMessage } from '../../core/decorators/error-message.decorator';
 import { SuccessMessage } from '../../core/decorators/response-message.decorator';
 import { EmailService } from '../../email/email.service';
+import { Public } from '../decorator/public.decorator';
 import { Roles } from '../decorator/roles.decorator';
 import { SendEmailSignUpDTO } from '../dto/send-email-signup.dto';
 import { UpdateUserDTO } from '../dto/update-user.dto';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { JwtAuthService } from '../services/jwt-auth.service';
 import { UserService } from '../services/user.service';
 
@@ -38,6 +38,13 @@ interface IUserAuth extends Request {
   email: string;
 }
 
+export type UploadedFile = {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
+  size?: number;
+};
+
 /**
  * **AuthController**
  *
@@ -51,6 +58,7 @@ export class UserController {
     private readonly userService: UserService,
     private readonly jwtAuthService: JwtAuthService,
     private readonly emailService: EmailService,
+    private readonly superbaseStorageService: SuperbaseStorageService,
   ) {}
 
   setFallbackName = (name: string): string => {
@@ -71,7 +79,6 @@ export class UserController {
   }
 
   @Get('profiles/me')
-  @UseGuards(JwtAuthGuard)
   @SuccessMessage('Dados do usuário autenticado enviados com sucesso.')
   @ErrorMessage('Erro ao enviar os dados do usuário autenticado.')
   async getAuthUserInfo(@Req() req: IAuthRequest) {
@@ -91,7 +98,6 @@ export class UserController {
   }
 
   @Get('profiles/me/detail')
-  @UseGuards(JwtAuthGuard)
   @SuccessMessage('Dados do usuário autenticado enviados com sucesso.')
   @ErrorMessage('Erro ao enviar os dados do usuário autenticado.')
   async getDetailedAuthUserInfo(@Req() req: IAuthRequest) {
@@ -103,7 +109,7 @@ export class UserController {
     if (!user) {
       throw new UnauthorizedException('Usuário não autorizado.');
     } else {
-      const { password, ...rest } = user;
+      const { password, idUser, ...rest } = user;
       return rest;
     }
   }
@@ -123,6 +129,7 @@ export class UserController {
     return password;
   }
 
+  @Public()
   @Post('send-signup-email')
   @Roles(USER_ROLES.ADMIN, USER_ROLES.ADMIN_ROOT)
   @SuccessMessage('Email de cadastro enviado com sucesso.')
@@ -166,30 +173,79 @@ export class UserController {
     }
   }
 
+  mapUpdateUserDtoToPrisma(dto: UpdateUserDTO): Prisma.UserUpdateInput {
+    const { address, mediaObject, ...userData } = dto;
+
+    if (!address) {
+      return userData;
+    }
+
+    const { idAddress, ...addressData } = address;
+
+    if (idAddress) {
+      return {
+        ...userData,
+        address: {
+          update: {
+            where: { idAddress },
+            data: addressData,
+          },
+        },
+      };
+    }
+
+    return {
+      ...userData,
+      address: {
+        create: addressData,
+      },
+    };
+  }
+
   @Post('profiles')
   @UseInterceptors(FileInterceptor('file'))
-  async SaveUserInfo(@Body() body: any, @UploadedFile() file?: any) {
+  async SaveUserInfo(
+    @Req() req: IAuthRequest,
+    @UploadedFile() file?: UploadedFile,
+  ) {
     let parsedData: UpdateUserDTO;
-
     try {
-      console.log('body', body.data);
-      parsedData = JSON.parse(body.data);
+      parsedData = JSON.parse(req.body.data);
     } catch {
       throw new BadRequestException('JSON inválido no campo data.');
     }
-
-    // 2️⃣ Converte para DTO real
+    delete parsedData.mediaObject;
     const dtoInstance = plainToInstance(UpdateUserDTO, parsedData);
+    try {
+      await validateOrReject(dtoInstance, {
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      });
+      const upToDateUserData = this.mapUpdateUserDtoToPrisma(parsedData);
+      let userDataUpdated: User;
+      let finalUserUpdate: User & { address?: any };
+      userDataUpdated = await this.userService.updateUser({
+        where: { idUser: req.user.idUser },
+        data: upToDateUserData,
+      });
 
-    // 3️⃣ Validação manual
-    await validateOrReject(dtoInstance, {
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    });
-
-    console.log('DTO VALIDADO:', dtoInstance);
-    console.log('FILE:', file);
-
-    return;
+      if (file) {
+        const fileUploaded = await this.superbaseStorageService.uploadFile({
+          buffer: file.buffer,
+          originalName: file.originalname,
+          contentType: file.mimetype,
+          folder: 'profiles',
+        });
+        finalUserUpdate = await this.userService.updateUser({
+          where: { idUser: userDataUpdated.idUser },
+          data: { photoPath: fileUploaded.path },
+          include: { address: true },
+        });
+      }
+      return finalUserUpdate;
+    } catch (errors) {
+      console.error('ERROS DE VALIDAÇÃO:', JSON.stringify(errors, null, 2));
+      throw errors;
+    }
   }
 }

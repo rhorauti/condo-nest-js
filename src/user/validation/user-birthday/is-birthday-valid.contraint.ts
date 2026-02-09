@@ -8,9 +8,14 @@ import {
 export class IsAgeValidConstraint implements ValidatorConstraintInterface {
   validate(birthDate: Date, args: ValidationArguments) {
     if (!birthDate) return false;
+    const date = birthDate instanceof Date ? birthDate : new Date(birthDate);
+
+    if (isNaN(date.getTime())) return false;
+
     const eighteenYearsAgo = new Date();
     eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
-    return eighteenYearsAgo.getTime() >= birthDate.getTime();
+
+    return date.getTime() <= eighteenYearsAgo.getTime();
   }
 
   defaultMessage(args: ValidationArguments) {

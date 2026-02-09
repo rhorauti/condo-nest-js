@@ -56,4 +56,30 @@ export class SuperbaseStorageService {
       signedUrl: data.signedUrl,
     };
   }
+
+  async deleteFile(opts: {
+    path: string; // ex: "posts/abc-123.jpg"
+  }) {
+    const { path } = opts;
+
+    if (!path) {
+      throw new InternalServerErrorException(
+        'Caminho do arquivo não informado',
+      );
+    }
+
+    const client = this.supabase.getClient();
+
+    const { error } = await client.storage.from(this.bucket).remove([path]); // sempre array
+
+    if (error) {
+      console.error(error);
+      throw new InternalServerErrorException('Erro ao excluir arquivo');
+    }
+
+    return {
+      deleted: true,
+      path,
+    };
+  }
 }

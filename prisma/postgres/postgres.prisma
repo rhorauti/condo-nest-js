@@ -69,22 +69,22 @@ model User {
 model Address {
   idAddress   Int         @default(autoincrement())
   type        AddressType @default(HOUSE)
-  street      String
+  street      String?
   number      String?
   district    String?
   city        String?
   state       String?
-  zipCode     String?
+  postalCode  String?
   block       String?
   blockType   Int?   
   lot         String?
   lotType     Int?
 
-  idUser      Int
-  user        User       @relation(fields: [idUser], references: [idUser],  onDelete: Cascade)
+  idUser      Int?
+  user        User?       @relation(fields: [idUser], references: [idUser],  onDelete: Cascade)
 
-  idCondo     Int         @unique
-  condo       Condo       @relation(fields: [idCondo], references: [idCondo], onDelete: Cascade)
+  idCondo     Int?         @unique
+  condo       Condo?      @relation(fields: [idCondo], references: [idCondo], onDelete: Cascade)
 
   @@id([idAddress], map: "PK_address")
 

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaService } from '../../prisma/postgres/prisma.service';
+import { SupabaseModule } from '../../superbase/superbase.module';
 import { EmailModule } from '../email/email.module';
 import { EmailService } from '../email/email.service';
 import { AuthController } from './controller/auth.controller';
@@ -14,6 +15,7 @@ import { LocalStrategy } from './strategies/local-strategy';
 @Module({
   imports: [
     PassportModule,
+    SupabaseModule,
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET_KEY,

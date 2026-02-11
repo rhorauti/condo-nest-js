@@ -1,34 +1,22 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ITokenPayload } from '../../core/interfaces/jwt.interface';
-
-const cookieExtractor = (req: any): string | null => {
-  if (req && req.cookies) {
-    return req.cookies['access_token'];
-  }
-  return null;
-};
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private configService: ConfigService) {
-    const secret = configService.get<string>('JWT_SECRET_KEY');
-
-    if (!secret) {
-      throw new UnauthorizedException(
-        'JWT_SECRET_KEY is not set in environment variables!',
-      );
-    }
-
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor() {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([cookieExtractor]),
-      secretOrKey: secret,
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: process.env.SUPABASE_JWT_SECRET!,
+      ignoreExpiration: false,
     });
   }
 
-  validate(payload: ITokenPayload) {
-    return { idUser: payload.idUser, email: payload.email, role: payload.role };
+  async validate(payload: any) {
+    return {
+      userId: payload.sub, // UUID do Supabase
+      email: payload.email,
+      role: payload.user_metadata?.role,
+    };
   }
 }

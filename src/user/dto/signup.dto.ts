@@ -1,4 +1,5 @@
 import { IsBoolean, IsNotEmpty, IsString, Matches } from 'class-validator';
+import { USER_ROLES } from '../../core/enum/role.enum';
 import { IsAgeValid } from '../validation/user-birthday/is-birthday-valid.decorator';
 import { LoginDTO } from './login.dto';
 
@@ -19,4 +20,7 @@ export class SignUpDTO extends LoginDTO {
     message: 'O campo aceite dos termos não pode estar sem a flag.',
   })
   agreedWithTerms!: boolean;
+
+  @IsString({ message: 'Deve ser fornecida a role' })
+  role!: USER_ROLES;
 }

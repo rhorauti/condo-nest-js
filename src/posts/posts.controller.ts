@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Post,
+  Req,
+  UnauthorizedException,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -15,11 +17,31 @@ import { UserService } from '../user/services/user.service';
 import { CreateOrUpdatePostDto } from './dto/post.dto';
 import { PostsService } from './posts.service';
 
+interface IAuthRequest {
+  user: IUserAuth;
+  cookies: {
+    access_token: string;
+  };
+  csrfToken: () => string;
+}
+
+interface IUserAuth extends Request {
+  idUser?: number;
+  email: string;
+}
+
+export type UploadedFile = {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
+  size?: number;
+};
+
 @Controller('posts')
 export class PostsController {
   constructor(
     private readonly postsService: PostsService,
-    private readonly storageService: SuperbaseStorageService,
+    private readonly superbaseStorageService: SuperbaseStorageService,
     private readonly userService: UserService,
   ) {}
 
@@ -37,17 +59,22 @@ export class PostsController {
   @ErrorMessage('Erro ao criar o post.')
   @UseGuards(JwtAuthGuard)
   async createPost(
+    @Req() req: IAuthRequest,
     @Body() createPostDto: CreateOrUpdatePostDto,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles() files: UploadedFile[],
   ) {
     try {
+      const accessToken = req.cookies?.access_token;
+
+      if (!accessToken) {
+        throw new UnauthorizedException('Token não encontrado');
+      }
       const uploadedMedia = await Promise.all(
         (files || []).map((file) =>
-          this.storageService.uploadFile({
+          this.superbaseStorageService.uploadFile(accessToken, {
             buffer: file.buffer,
             originalName: file.originalname,
             contentType: file.mimetype,
-            folder: 'posts',
           }),
         ),
       );

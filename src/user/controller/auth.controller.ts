@@ -3,24 +3,26 @@ import {
   Body,
   Controller,
   Get,
+  InternalServerErrorException,
   NotFoundException,
   Post,
   Req,
   Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { User } from '@prisma/client';
-import { hash } from 'bcrypt';
 import type { Request, Response } from 'express';
+import { SupabaseService } from '../../../superbase/superbase.service';
 import { ErrorMessage } from '../../core/decorators/error-message.decorator';
 import { SuccessMessage } from '../../core/decorators/response-message.decorator';
+import { USER_ROLES } from '../../core/enum/role.enum';
 import { EmailService } from '../../email/email.service';
 import { Public } from '../decorator/public.decorator';
-import { ChangePasswordDTO } from '../dto/new-password.dto';
 import { SendRecoveryEmailDTO } from '../dto/passowrd-recovery.dto';
+import { SendEmailSignUpDTO } from '../dto/send-email-signup.dto';
 import { SignUpDTO } from '../dto/signup.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { LocalAuthGuard } from '../guards/local-auth.guard';
 import { JwtAuthService } from '../services/jwt-auth.service';
 import { UserService } from '../services/user.service';
 
@@ -47,6 +49,7 @@ export class AuthController {
   constructor(
     private readonly userService: UserService,
     private readonly jwtAuthService: JwtAuthService,
+    private readonly supabaseService: SupabaseService,
     private readonly emailService: EmailService,
   ) {}
 
@@ -62,7 +65,8 @@ export class AuthController {
    * GET /csrf-token
    * Response: { "csrfToken": "vib71...19s" }
    */
-  @Get('csrf-token')
+  @Public()
+  @Get('auth/csrf-token')
   getCsrfToken(@Req() request: IAuthRequest) {
     return {
       csrfToken: request.csrfToken(),
@@ -76,6 +80,61 @@ export class AuthController {
     }
     return '';
   };
+
+  generateSecureTempPassword(length = 10): string {
+    const chars =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*';
+    const array = new Uint8Array(length);
+    crypto.getRandomValues(array);
+    let password = '';
+
+    for (let i = 0; i < length; i++) {
+      const index = array[i] % chars.length;
+      password += chars[index];
+    }
+
+    return password;
+  }
+
+  @Public()
+  @Post('auth/send-signup-email')
+  // @Roles(USER_ROLES.ADMIN, USER_ROLES.ADMIN_ROOT)
+  @SuccessMessage('Email de cadastro enviado com sucesso.')
+  @ErrorMessage('Erro ao enviar o e-mail de cadastro.')
+  async sendEmailToNewUser(@Body() dto: SendEmailSignUpDTO) {
+    const existedUser = await this.userService.getUser({
+      where: { email: dto.email },
+    });
+
+    if (existedUser) {
+      throw new BadRequestException('E-mail já cadastrado.');
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data, error } = await supabase.auth.admin.inviteUserByEmail(
+      dto.email,
+      {
+        redirectTo: `${process.env.FRONTEND_URL}/signup`,
+        data: {
+          role: dto.role ?? USER_ROLES.USER,
+          name: this.capitalizeFullName(dto.name),
+        },
+      },
+    );
+
+    if (error) {
+      console.log('error', error);
+      throw new InternalServerErrorException(
+        error.message ?? 'Erro ao enviar o e-mail de cadastro',
+      );
+    }
+
+    return {
+      email: dto.email,
+      name: dto.name,
+    };
+  }
 
   /**
    * Authenticates a user via email and password (handled by `LocalAuthGuard`).
@@ -95,36 +154,62 @@ export class AuthController {
    * Body: { "email": "user@example.com", "password": "secretPassword" }
    */
   @Public()
-  @Post('login')
-  @UseGuards(LocalAuthGuard)
+  @Post('auth/email')
+  @UseGuards(JwtAuthGuard)
   @SuccessMessage('Usuário logado com sucesso.')
   @ErrorMessage('Erro ao logar o usuário')
   async loginUser(
-    @Req() request: IAuthRequest,
+    @Body() body: { email: string; password: string },
     @Res({ passthrough: true }) response: Response,
   ) {
-    const user = await this.userService.getUser({
-      where: { email: request.body.email },
-    });
-    if (!user) {
-      throw new BadRequestException('Usuário não encontrado para este e-mail.');
-    } else {
-      const token = this.jwtAuthService.createToken({
-        email: user.email,
-        idUser: user.idUser,
-        role: user.role,
-      });
-      response.cookie('access_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 2 * 24 * 60 * 60 * 1000,
-      });
+    const { email, password } = body;
 
-      return {
-        email: user.email,
-      };
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error || !data.session) {
+      throw new UnauthorizedException('Credenciais inválidas');
     }
+
+    const accessToken = data.session.access_token;
+
+    response.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: data.session.expires_in * 1000,
+    });
+
+    return {
+      email: data.user.email,
+    };
+  }
+
+  @Public()
+  @Get('auth/google')
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
+    const code = req.query.code as string;
+
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error || !data.session) {
+      throw new UnauthorizedException('Falha no login Google');
+    }
+
+    res.cookie('access_token', data.session.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: data.session.expires_in * 1000,
+    });
+
+    return res.redirect(process.env.FRONTEND_URL + '/web' || '');
   }
 
   capitalizeFullName(name: string): string {
@@ -155,38 +240,39 @@ export class AuthController {
    * POST /signup
    * Body: { "name": "John", "email": "john@test.com", "password": "123", ... }
    */
-  @Post('signup')
-  @SuccessMessage('Usuário criado com sucesso.')
+
+  @Post('auth/signup')
+  @SuccessMessage('Usuário criado com sucesso. Verifique seu e-mail.')
   @ErrorMessage('Erro ao criar o usuário')
   async createUser(
+    @Req() req: any,
     @Body() userDTO: SignUpDTO,
-  ): Promise<Omit<SignUpDTO, 'password'> & { idUser: number }> {
-    const user = await this.userService.getUser({
-      where: { email: userDTO.email },
-    });
-    if (!user) {
-      throw new BadRequestException('Email não autorizado para cadastro.');
-    } else {
-      const hashedPassword = await hash(userDTO.password, 10);
-      const userToBeCreated = {
-        ...userDTO,
-        password: hashedPassword,
-        name: this.capitalizeFullName(userDTO.name),
-        isActive: true,
-      };
-      const userToBeUpdated = await this.userService.updateUser({
-        where: { email: userDTO.email },
-        data: userToBeCreated,
-      });
-      return {
-        idUser: userToBeUpdated.idUser,
-        name: userToBeUpdated.name,
-        email: userToBeUpdated.email,
-        birthDate: userToBeUpdated.birthDate
-          ? userToBeUpdated.birthDate
-          : new Date(),
-        agreedWithTerms: userToBeUpdated.agreedWithTerms,
-      };
+  ): Promise<Omit<SignUpDTO, 'password'>> {
+    try {
+      const user = req.user;
+      if (user) {
+        const createdUser = await this.userService.createUser({
+          name: this.capitalizeFullName(user.user_metadata.name),
+          user_id: user.id,
+          email: user.email ?? '',
+          role: user.user_metadata.role,
+          birthDate: userDTO.birthDate,
+          agreedWithTerms: userDTO.agreedWithTerms,
+          isActive: true,
+        });
+
+        return {
+          name: createdUser.name,
+          email: createdUser.email,
+          birthDate: new Date(createdUser.birthDate ?? ''),
+          agreedWithTerms: createdUser.agreedWithTerms,
+          role: createdUser.role as USER_ROLES,
+        };
+      } else {
+        throw new BadRequestException('user_id inválido.');
+      }
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -206,31 +292,26 @@ export class AuthController {
    * POST /new-password (Headers: Authorization: Bearer <token>)
    * Body: { "password": "newSecurePassword123!" }
    */
-  @Post('new-password')
+  @Public()
+  @Post('auth/new-password')
   @SuccessMessage('Senha atualizada com sucesso.')
   @ErrorMessage('Erro ao atualizar a senha')
-  @UseGuards(JwtAuthGuard)
-  async updatePassword(
-    @Req() req: IAuthRequest,
-    @Body() userDTO: ChangePasswordDTO,
-  ) {
-    const email = req.user.email;
-    const user = await this.userService.getUser({
-      where: { email: email },
+  async updatePassword(@Req() req: any, @Body() body: { password: string }) {
+    const supabase = this.supabaseService.getUserClient(
+      req.cookies.access_token,
+    );
+
+    const { error } = await supabase.auth.updateUser({
+      password: body.password,
     });
-    if (!user) {
-      throw new BadRequestException('E-mail do usuário não encontrado.');
-    } else {
-      const hashedPassword = await hash(userDTO.password, 10);
-      userDTO.password = hashedPassword;
-      const updatedUser = await this.userService.updateUser({
-        where: { email: email },
-        data: userDTO,
-      });
-      return {
-        email: updatedUser ? updatedUser.email : '',
-      };
+
+    if (error) {
+      throw new BadRequestException(error.message);
     }
+
+    return {
+      message: 'Senha atualizada com sucesso',
+    };
   }
 
   /**
@@ -249,41 +330,36 @@ export class AuthController {
    * POST /password-recovery
    * Body: { "email": "forgot@example.com" }
    */
-  @Post('password-recovery')
+  @Public()
+  @Post('auth/password-recovery')
   @SuccessMessage('E-mail enviado com sucesso.')
   @ErrorMessage('Erro ao enviar o e-mail. Tente novamente mais tarde.')
   async sendRecoveryEmail(
-    @Body() userDTO: SendRecoveryEmailDTO,
-  ): Promise<SendRecoveryEmailDTO> {
+    @Body() body: SendRecoveryEmailDTO,
+  ): Promise<{ email: string }> {
     const user = await this.userService.getUser({
-      where: { email: userDTO.email },
+      where: { email: body.email },
     });
+
     if (!user) {
       throw new BadRequestException(
         'Não existe registro do e-mail fornecido no nosso banco de dados.',
       );
-    } else {
-      const token = this.jwtAuthService.createToken({
-        idUser: user.idUser,
-        email: user.email,
-        role: user.role,
-      });
-      const emailData = {
-        name: user.name,
-        email: user.email,
-        token: token,
-      };
-      this.emailService.sendPasswordRecoveryEmail(emailData).catch((error) => {
-        console.error(
-          `❌ Falha ao enviar e-mail de recuperação para: ${user.email}`,
-          error,
-        );
-      });
-
-      return {
-        email: user.email,
-      };
     }
+
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { error } = await supabase.auth.resetPasswordForEmail(body.email, {
+      redirectTo: `${process.env.FRONTEND_URL}/auth/reset-password`,
+    });
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return {
+      email: body.email,
+    };
   }
 
   /**
@@ -298,7 +374,7 @@ export class AuthController {
    * @example
    * POST /token-validation (Headers: Authorization: Bearer <token>)
    */
-  @Post('token-validation')
+  @Post('auth/token-validation')
   @SuccessMessage('Token validado com sucesso!')
   @UseGuards(JwtAuthGuard)
   async ValidateToken(@Req() req: IAuthRequest): Promise<void> {

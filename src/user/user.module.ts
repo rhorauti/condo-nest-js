@@ -10,7 +10,6 @@ import { UserController } from './controller/user.controller';
 import { JwtAuthService } from './services/jwt-auth.service';
 import { UserService } from './services/user.service';
 import { JwtStrategy } from './strategies/jwt-strategy';
-import { LocalStrategy } from './strategies/local-strategy';
 
 @Module({
   imports: [
@@ -29,7 +28,6 @@ import { LocalStrategy } from './strategies/local-strategy';
     PrismaService,
     JwtAuthService,
     EmailService,
-    LocalStrategy,
     JwtStrategy,
   ],
   exports: [UserService, JwtAuthService],

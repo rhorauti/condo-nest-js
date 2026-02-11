@@ -9,26 +9,40 @@ export class SuperbaseStorageService {
 
   constructor(private supabase: SupabaseService) {}
 
-  async uploadFile(opts: {
-    buffer: Buffer;
-    originalName: string;
-    contentType?: string;
-    folder?: string;
-    expiresInSeconds?: number; // tempo de expiração da signed URL
-  }) {
+  async uploadFile(
+    accessToken: string,
+    opts: {
+      buffer: Buffer;
+      originalName: string;
+      contentType?: string;
+      folder?: string;
+      expiresInSeconds?: number;
+    },
+  ) {
     const {
       buffer,
       originalName,
       contentType,
       folder = 'posts',
-      expiresInSeconds = 60 * 60, // padrão: 1h
+      expiresInSeconds = 60 * 60,
     } = opts;
 
     const ext = path.extname(originalName) || '.jpg';
     const filename = `${uuidv4()}${ext}`;
-    const filePath = `${folder}/${filename}`;
 
-    const client = this.supabase.getClient();
+    // 🔐 client COM token do usuário
+    const client = this.supabase.getUserClient(accessToken);
+
+    // 🔑 pega o userId do JWT
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+
+    if (!user) {
+      throw new InternalServerErrorException('Usuário não autenticado');
+    }
+
+    const filePath = `${user.id}/${folder}/${filename}`;
 
     const { error: uploadError } = await client.storage
       .from(this.bucket)
@@ -57,9 +71,7 @@ export class SuperbaseStorageService {
     };
   }
 
-  async deleteFile(opts: {
-    path: string; // ex: "posts/abc-123.jpg"
-  }) {
+  async deleteFile(accessToken: string, opts: { path: string }) {
     const { path } = opts;
 
     if (!path) {
@@ -68,9 +80,9 @@ export class SuperbaseStorageService {
       );
     }
 
-    const client = this.supabase.getClient();
+    const client = this.supabase.getUserClient(accessToken);
 
-    const { error } = await client.storage.from(this.bucket).remove([path]); // sempre array
+    const { error } = await client.storage.from(this.bucket).remove([path]);
 
     if (error) {
       console.error(error);

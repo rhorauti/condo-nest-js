@@ -8,6 +8,7 @@
   "scripts": {
     "prisma:generate": "npx prisma generate --config=./prisma/postgres/prisma.config.ts",
     "prisma:migrate:dev": "npx prisma migrate dev --config=./prisma/postgres/prisma.config.ts",
+    "prisma:migrate:prod": "npx prisma migrate deploy --config=./prisma/postgres/prisma.config.ts",
     "db:push": "npx prisma db push --config=./prisma/postgres/prisma.config.ts",
     "db:reset": "npx prisma migrate reset --config=./prisma/postgres/prisma.config.ts",
     "email": "email dev --dir ./emails",

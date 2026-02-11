@@ -43,8 +43,8 @@ enum USER_ROLES {
 
 model User {
   idUser              Int         @default(autoincrement())
+  user_id            String      @unique @postgres.Uuid
   email               String      @unique(map: "UQ_user_email")
-  password            String
   name                String
   birthDate           DateTime?   @postgres.Timestamptz
   photoPath           String?
@@ -53,7 +53,7 @@ model User {
   isWhattsapp         Boolean     @default(false)
   agreedWithTerms     Boolean     @default(false)
   isActive            Boolean     @default(false)
-  createdAt           DateTime    @default(now()) @postgres.Timestamptz
+  createdAt           DateTime    @default(now()) @postgres.Timestamptz  
 
   address             Address[]
 

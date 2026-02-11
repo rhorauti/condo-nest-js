@@ -14,7 +14,7 @@ async function bootstrap() {
   app.use(cookieParser());
   app.use(
     csurf({
-      cookie: true, // Indica que o secret será lido/escrito via cookie
+      cookie: true,
     }),
   );
   app.enableCors({

@@ -9,7 +9,6 @@ import {
   Req,
   Res,
   UnauthorizedException,
-  UseGuards,
 } from '@nestjs/common';
 import { User } from '@prisma/client';
 import type { Request, Response } from 'express';
@@ -22,8 +21,7 @@ import { Public } from '../decorator/public.decorator';
 import { SendRecoveryEmailDTO } from '../dto/passowrd-recovery.dto';
 import { SendEmailSignUpDTO } from '../dto/send-email-signup.dto';
 import { SignUpDTO } from '../dto/signup.dto';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { JwtAuthService } from '../services/jwt-auth.service';
+// import { JwtAuthService } from '../services/jwt-auth.service';
 import { UserService } from '../services/user.service';
 
 interface IAuthRequest {
@@ -48,7 +46,7 @@ interface IUserAuth extends Request {
 export class AuthController {
   constructor(
     private readonly userService: UserService,
-    private readonly jwtAuthService: JwtAuthService,
+    // private readonly jwtAuthService: JwtAuthService,
     private readonly supabaseService: SupabaseService,
     private readonly emailService: EmailService,
   ) {}
@@ -124,7 +122,6 @@ export class AuthController {
     );
 
     if (error) {
-      console.log('error', error);
       throw new InternalServerErrorException(
         error.message ?? 'Erro ao enviar o e-mail de cadastro',
       );
@@ -155,7 +152,6 @@ export class AuthController {
    */
   @Public()
   @Post('auth/email')
-  @UseGuards(JwtAuthGuard)
   @SuccessMessage('Usuário logado com sucesso.')
   @ErrorMessage('Erro ao logar o usuário')
   async loginUser(
@@ -360,30 +356,5 @@ export class AuthController {
     return {
       email: body.email,
     };
-  }
-
-  /**
-   * Generic token validation endpoint.
-   *
-   *
-   * @param req - The request object containing the user's email from the JWT.
-   * @returns Partial user data.
-   *
-   * @throws {NotFoundException} If user is not found.
-   *
-   * @example
-   * POST /token-validation (Headers: Authorization: Bearer <token>)
-   */
-  @Post('auth/token-validation')
-  @SuccessMessage('Token validado com sucesso!')
-  @UseGuards(JwtAuthGuard)
-  async ValidateToken(@Req() req: IAuthRequest): Promise<void> {
-    const email = req.user.email;
-    const user = await this.userService.getUser({
-      where: { email: email },
-    });
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
-    }
   }
 }

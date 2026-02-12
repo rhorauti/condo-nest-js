@@ -17,10 +17,6 @@ export class SupabaseService {
     this.adminClient = createClient(url, serviceKey, {
       auth: { persistSession: false },
     });
-
-    console.log('adminClient', this.adminClient);
-    console.log('serviceKey', serviceKey);
-    console.log('url', url);
   }
 
   // 🔐 client com token do usuário (RLS ativo)

@@ -7,9 +7,7 @@ import { EmailModule } from '../email/email.module';
 import { EmailService } from '../email/email.service';
 import { AuthController } from './controller/auth.controller';
 import { UserController } from './controller/user.controller';
-import { JwtAuthService } from './services/jwt-auth.service';
 import { UserService } from './services/user.service';
-import { JwtStrategy } from './strategies/jwt-strategy';
 
 @Module({
   imports: [
@@ -23,13 +21,7 @@ import { JwtStrategy } from './strategies/jwt-strategy';
     EmailModule,
   ],
   controllers: [UserController, AuthController],
-  providers: [
-    UserService,
-    PrismaService,
-    JwtAuthService,
-    EmailService,
-    JwtStrategy,
-  ],
-  exports: [UserService, JwtAuthService],
+  providers: [UserService, PrismaService, EmailService],
+  exports: [UserService],
 })
 export class UserModule {}

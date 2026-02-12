@@ -19,13 +19,19 @@ export class SupabaseAuthGuard implements CanActivate {
     if (isPublic) return true;
 
     const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return false;
+    let token: string | undefined;
+
+    // 1️⃣ Tenta pegar do Authorization header
+    const authHeader = request.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.replace('Bearer ', '').trim();
     }
 
-    const token = authHeader.split(' ')[1];
+    // 2️⃣ Se não tiver, tenta pegar do cookie
+    if (!token && request.cookies?.access_token) {
+      token = request.cookies.access_token;
+    }
 
     if (!token) return false;
 

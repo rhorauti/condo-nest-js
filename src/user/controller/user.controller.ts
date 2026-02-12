@@ -11,19 +11,18 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from '@prisma/client';
 import { Prisma } from '@prisma/postgres-client/client';
+import { User as SuperbaseUser } from '@supabase/supabase-js';
 import { plainToInstance } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
-import type { Request } from 'express';
 import { SuperbaseStorageService } from '../../../superbase/superbase-storage.service';
+import { SupabaseService } from '../../../superbase/superbase.service';
 import { ErrorMessage } from '../../core/decorators/error-message.decorator';
 import { SuccessMessage } from '../../core/decorators/response-message.decorator';
-import { EmailService } from '../../email/email.service';
 import { UpdateUserDTO } from '../dto/update-user.dto';
-import { JwtAuthService } from '../services/jwt-auth.service';
 import { UserService } from '../services/user.service';
 
 interface IAuthRequest {
-  user: IUserAuth;
+  user: SuperbaseUser;
   cookies: {
     access_token: string;
   };
@@ -31,10 +30,10 @@ interface IAuthRequest {
   body: User;
 }
 
-interface IUserAuth extends Request {
-  idUser?: number;
-  email: string;
-}
+// interface IUserAuth extends Request {
+//   idUser?: number;
+//   email: string;
+// }
 
 export type UploadedFile = {
   buffer: Buffer;
@@ -54,8 +53,7 @@ export type UploadedFile = {
 export class UserController {
   constructor(
     private readonly userService: UserService,
-    private readonly jwtAuthService: JwtAuthService,
-    private readonly emailService: EmailService,
+    private readonly superbaseService: SupabaseService,
     private readonly superbaseStorageService: SuperbaseStorageService,
   ) {}
 
@@ -82,8 +80,8 @@ export class UserController {
   @SuccessMessage('Dados do usuário autenticado enviados com sucesso.')
   @ErrorMessage('Erro ao enviar os dados do usuário autenticado.')
   async getAuthUserInfo(@Req() req: IAuthRequest) {
-    const idUser = req.user.idUser;
-    const user = await this.userService.getUser({ where: { idUser: idUser } });
+    const idUser = req.user.id;
+    const user = await this.userService.getUser({ where: { user_id: idUser } });
     if (!user) {
       throw new UnauthorizedException('Usuário não autorizado.');
     } else {
@@ -101,9 +99,9 @@ export class UserController {
   @SuccessMessage('Dados do usuário autenticado enviados com sucesso.')
   @ErrorMessage('Erro ao enviar os dados do usuário autenticado.')
   async getDetailedAuthUserInfo(@Req() req: IAuthRequest) {
-    const idUser = req.user.idUser;
+    const idUser = req.user.id;
     const user = await this.userService.getUser({
-      where: { idUser: idUser },
+      where: { user_id: idUser },
       include: { address: true },
     });
     if (!user) {
@@ -144,6 +142,8 @@ export class UserController {
   }
 
   @Post('profiles')
+  @SuccessMessage('Dados do usuário atualizado com sucesso.')
+  @ErrorMessage('Erro ao atualizar os dados do usuário.')
   @UseInterceptors(FileInterceptor('file'))
   async SaveUserInfo(
     @Req() req: IAuthRequest,
@@ -166,7 +166,7 @@ export class UserController {
       let userDataUpdated: User;
       let finalUserUpdate: User & { address?: any };
       userDataUpdated = await this.userService.updateUser({
-        where: { idUser: req.user.idUser },
+        where: { user_id: req.user.id },
         data: upToDateUserData,
       });
 
@@ -183,6 +183,7 @@ export class UserController {
             buffer: file.buffer,
             originalName: file.originalname,
             contentType: file.mimetype,
+            folder: 'profiles',
           },
         );
         finalUserUpdate = await this.userService.updateUser({

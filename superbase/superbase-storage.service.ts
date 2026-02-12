@@ -15,7 +15,7 @@ export class SuperbaseStorageService {
       buffer: Buffer;
       originalName: string;
       contentType?: string;
-      folder?: string;
+      folder: string;
       expiresInSeconds?: number;
     },
   ) {
@@ -23,7 +23,7 @@ export class SuperbaseStorageService {
       buffer,
       originalName,
       contentType,
-      folder = 'posts',
+      folder,
       expiresInSeconds = 60 * 60,
     } = opts;
 
@@ -42,7 +42,7 @@ export class SuperbaseStorageService {
       throw new InternalServerErrorException('Usuário não autenticado');
     }
 
-    const filePath = `${user.id}/${folder}/${filename}`;
+    const filePath = `${folder}/${user.id}-${filename}`;
 
     const { error: uploadError } = await client.storage
       .from(this.bucket)

@@ -5,14 +5,12 @@ import {
   Req,
   UnauthorizedException,
   UploadedFiles,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { SuperbaseStorageService } from '../../superbase/superbase-storage.service';
 import { ErrorMessage } from '../core/decorators/error-message.decorator';
 import { SuccessMessage } from '../core/decorators/response-message.decorator';
-import { JwtAuthGuard } from '../user/guards/jwt-auth.guard';
 import { UserService } from '../user/services/user.service';
 import { CreateOrUpdatePostDto } from './dto/post.dto';
 import { PostsService } from './posts.service';
@@ -57,7 +55,6 @@ export class PostsController {
   @UseInterceptors(FilesInterceptor('files'))
   @SuccessMessage('Post criado com sucesso.')
   @ErrorMessage('Erro ao criar o post.')
-  @UseGuards(JwtAuthGuard)
   async createPost(
     @Req() req: IAuthRequest,
     @Body() createPostDto: CreateOrUpdatePostDto,
@@ -74,6 +71,7 @@ export class PostsController {
           this.superbaseStorageService.uploadFile(accessToken, {
             buffer: file.buffer,
             originalName: file.originalname,
+            folder: 'posts',
             contentType: file.mimetype,
           }),
         ),

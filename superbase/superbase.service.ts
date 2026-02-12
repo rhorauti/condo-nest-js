@@ -31,7 +31,8 @@ export class SupabaseService {
           },
         },
         auth: {
-          persistSession: false,
+          persistSession: true,
+          autoRefreshToken: true,
         },
       },
     );

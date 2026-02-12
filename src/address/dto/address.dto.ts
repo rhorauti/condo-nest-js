@@ -1,6 +1,6 @@
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 
-export class AddressDTO {
+export class CreateAddressDTO {
   @IsNumber()
   @IsOptional()
   idAddress?: number;

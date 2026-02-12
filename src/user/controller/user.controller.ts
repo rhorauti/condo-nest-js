@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Controller,
   Get,
+  Param,
   Post,
   Req,
   UnauthorizedException,
@@ -112,33 +113,25 @@ export class UserController {
     }
   }
 
+  @Get('profiles/:idUser')
+  @SuccessMessage('Dados do usuário autenticado enviados com sucesso.')
+  @ErrorMessage('Erro ao enviar os dados do usuário autenticado.')
+  async getDetailedUserInfo(@Param('idUser') idUser: number) {
+    const user = await this.userService.getUser({
+      where: { idUser: idUser },
+      include: { address: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Usuário não encontrado.');
+    } else {
+      const { idUser, ...rest } = user;
+      return rest;
+    }
+  }
+
   mapUpdateUserDtoToPrisma(dto: UpdateUserDTO): Prisma.UserUpdateInput {
-    const { address, mediaObject, ...userData } = dto;
-
-    if (!address) {
-      return userData;
-    }
-
-    const { idAddress, ...addressData } = address;
-
-    if (idAddress) {
-      return {
-        ...userData,
-        address: {
-          update: {
-            where: { idAddress },
-            data: addressData,
-          },
-        },
-      };
-    }
-
-    return {
-      ...userData,
-      address: {
-        create: addressData,
-      },
-    };
+    const { mediaObject, ...userData } = dto;
+    return userData;
   }
 
   @Post('profiles')

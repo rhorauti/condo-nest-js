@@ -50,7 +50,7 @@ model User {
   photoPath           String?
   role                USER_ROLES
   phone               String?
-  isWhattsapp         Boolean     @default(false)
+  isWhatsapp         Boolean     @default(false)
   agreedWithTerms     Boolean     @default(false)
   isActive            Boolean     @default(false)
   createdAt           DateTime    @default(now()) @postgres.Timestamptz  

@@ -1,22 +1,23 @@
-import { OmitType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
   IsOptional,
   IsString,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { USER_ROLES } from '../../core/enum/role.enum';
 import { MediaDTO } from '../../media/dto/media.dto';
 import { SignUpDTO } from './signup.dto';
 
-export class UpdateUserDTO extends OmitType(SignUpDTO, [
-  'password',
-  'agreedWithTerms',
-]) {
+export class UpdateUserDTO extends PartialType(
+  OmitType(SignUpDTO, ['password', 'agreedWithTerms'] as const),
+) {
   @IsBoolean()
-  isActive!: boolean;
+  @IsOptional()
+  isActive?: boolean;
 
   @IsString()
   @IsOptional()
@@ -24,8 +25,13 @@ export class UpdateUserDTO extends OmitType(SignUpDTO, [
 
   @IsEnum(USER_ROLES)
   @IsOptional()
-  role!: USER_ROLES;
+  role?: USER_ROLES;
 
+  @IsBoolean()
+  @IsOptional()
+  isWhatsapp?: boolean;
+
+  @ValidateIf((_, value) => value !== null)
   @ValidateNested()
   @IsOptional()
   @Type(() => MediaDTO)

@@ -4,21 +4,17 @@ import {
   Controller,
   Get,
   InternalServerErrorException,
-  NotFoundException,
   Post,
   Req,
-  Res,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { User } from '@prisma/client';
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
 import { SupabaseService } from '../../../superbase/superbase.service';
 import { ErrorMessage } from '../../core/decorators/error-message.decorator';
 import { SuccessMessage } from '../../core/decorators/response-message.decorator';
 import { USER_ROLES } from '../../core/enum/role.enum';
 import { EmailService } from '../../email/email.service';
 import { Public } from '../decorator/public.decorator';
-import { SendRecoveryEmailDTO } from '../dto/passowrd-recovery.dto';
 import { SendEmailSignUpDTO } from '../dto/send-email-signup.dto';
 import { SignUpDTO } from '../dto/signup.dto';
 // import { JwtAuthService } from '../services/jwt-auth.service';
@@ -79,21 +75,6 @@ export class AuthController {
     return '';
   };
 
-  generateSecureTempPassword(length = 10): string {
-    const chars =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*';
-    const array = new Uint8Array(length);
-    crypto.getRandomValues(array);
-    let password = '';
-
-    for (let i = 0; i < length; i++) {
-      const index = array[i] % chars.length;
-      password += chars[index];
-    }
-
-    return password;
-  }
-
   @Public()
   @Post('auth/send-signup-email')
   // @Roles(USER_ROLES.ADMIN, USER_ROLES.ADMIN_ROOT)
@@ -131,81 +112,6 @@ export class AuthController {
       email: dto.email,
       name: dto.name,
     };
-  }
-
-  /**
-   * Authenticates a user via email and password (handled by `LocalAuthGuard`).
-   * If successful, it generates a JWT, sets it as an HTTP-only cookie, and returns user info.
-   *
-   * @remarks
-   * The `LocalAuthGuard` is expected to validate credentials before this method executes.
-   *
-   * @param request - Request object containing the user's email in the body.
-   * @param response - Express response object used to set the `access_token` cookie.
-   * @returns Basic user information (name, email, access level).
-   *
-   * @throws {NotFoundException} If the user email does not exist in the database.
-   *
-   * @example
-   * POST /login
-   * Body: { "email": "user@example.com", "password": "secretPassword" }
-   */
-  @Public()
-  @Post('auth/email')
-  @SuccessMessage('Usuário logado com sucesso.')
-  @ErrorMessage('Erro ao logar o usuário')
-  async loginUser(
-    @Body() body: { email: string; password: string },
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    const { email, password } = body;
-
-    const supabase = this.supabaseService.getAdminClient();
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error || !data.session) {
-      throw new UnauthorizedException('Credenciais inválidas');
-    }
-
-    const accessToken = data.session.access_token;
-
-    response.cookie('access_token', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: data.session.expires_in * 1000,
-    });
-
-    return {
-      email: data.user.email,
-    };
-  }
-
-  @Public()
-  @Get('auth/google')
-  async googleCallback(@Req() req: Request, @Res() res: Response) {
-    const code = req.query.code as string;
-
-    const supabase = this.supabaseService.getAdminClient();
-
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (error || !data.session) {
-      throw new UnauthorizedException('Falha no login Google');
-    }
-
-    res.cookie('access_token', data.session.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: data.session.expires_in * 1000,
-    });
-
-    return res.redirect(process.env.FRONTEND_URL + '/web' || '');
   }
 
   capitalizeFullName(name: string): string {
@@ -288,73 +194,73 @@ export class AuthController {
    * POST /new-password (Headers: Authorization: Bearer <token>)
    * Body: { "password": "newSecurePassword123!" }
    */
-  @Public()
-  @Post('auth/new-password')
-  @SuccessMessage('Senha atualizada com sucesso.')
-  @ErrorMessage('Erro ao atualizar a senha')
-  async updatePassword(@Req() req: any, @Body() body: { password: string }) {
-    const supabase = this.supabaseService.getUserClient(
-      req.cookies.access_token,
-    );
+  // @Public()
+  // @Post('auth/new-password')
+  // @SuccessMessage('Senha atualizada com sucesso.')
+  // @ErrorMessage('Erro ao atualizar a senha')
+  // async updatePassword(@Req() req: any, @Body() body: { password: string }) {
+  //   const supabase = this.supabaseService.getUserClient(
+  //     req.cookies.access_token,
+  //   );
 
-    const { error } = await supabase.auth.updateUser({
-      password: body.password,
-    });
+  //   const { error } = await supabase.auth.updateUser({
+  //     password: body.password,
+  //   });
 
-    if (error) {
-      throw new BadRequestException(error.message);
-    }
+  //   if (error) {
+  //     throw new BadRequestException(error.message);
+  //   }
 
-    return {
-      message: 'Senha atualizada com sucesso',
-    };
-  }
+  //   return {
+  //     message: 'Senha atualizada com sucesso',
+  //   };
+  // }
 
-  /**
-   * Initiates the password recovery process.
-   *
-   * @remarks
-   * If the email exists, it generates a recovery token and sends an email with instructions.
-   * It handles the email sending asynchronously to not block the response.
-   *
-   * @param userDTO - DTO containing the email address to recover.
-   * @returns The email address processed.
-   *
-   * @throws {BadRequestException} If the email is not found in the database.
-   *
-   * @example
-   * POST /password-recovery
-   * Body: { "email": "forgot@example.com" }
-   */
-  @Public()
-  @Post('auth/password-recovery')
-  @SuccessMessage('E-mail enviado com sucesso.')
-  @ErrorMessage('Erro ao enviar o e-mail. Tente novamente mais tarde.')
-  async sendRecoveryEmail(
-    @Body() body: SendRecoveryEmailDTO,
-  ): Promise<{ email: string }> {
-    const user = await this.userService.getUser({
-      where: { email: body.email },
-    });
+  // /**
+  //  * Initiates the password recovery process.
+  //  *
+  //  * @remarks
+  //  * If the email exists, it generates a recovery token and sends an email with instructions.
+  //  * It handles the email sending asynchronously to not block the response.
+  //  *
+  //  * @param userDTO - DTO containing the email address to recover.
+  //  * @returns The email address processed.
+  //  *
+  //  * @throws {BadRequestException} If the email is not found in the database.
+  //  *
+  //  * @example
+  //  * POST /password-recovery
+  //  * Body: { "email": "forgot@example.com" }
+  //  */
+  // @Public()
+  // @Post('auth/password-recovery')
+  // @SuccessMessage('E-mail enviado com sucesso.')
+  // @ErrorMessage('Erro ao enviar o e-mail. Tente novamente mais tarde.')
+  // async sendRecoveryEmail(
+  //   @Body() body: SendRecoveryEmailDTO,
+  // ): Promise<{ email: string }> {
+  //   const user = await this.userService.getUser({
+  //     where: { email: body.email },
+  //   });
 
-    if (!user) {
-      throw new BadRequestException(
-        'Não existe registro do e-mail fornecido no nosso banco de dados.',
-      );
-    }
+  //   if (!user) {
+  //     throw new BadRequestException(
+  //       'Não existe registro do e-mail fornecido no nosso banco de dados.',
+  //     );
+  //   }
 
-    const supabase = this.supabaseService.getAdminClient();
+  //   const supabase = this.supabaseService.getAdminClient();
 
-    const { error } = await supabase.auth.resetPasswordForEmail(body.email, {
-      redirectTo: `${process.env.FRONTEND_URL}/auth/reset-password`,
-    });
+  //   const { error } = await supabase.auth.resetPasswordForEmail(body.email, {
+  //     redirectTo: `${process.env.FRONTEND_URL}/auth/reset-password`,
+  //   });
 
-    if (error) {
-      throw new BadRequestException(error.message);
-    }
+  //   if (error) {
+  //     throw new BadRequestException(error.message);
+  //   }
 
-    return {
-      email: body.email,
-    };
-  }
+  //   return {
+  //     email: body.email,
+  //   };
+  // }
 }

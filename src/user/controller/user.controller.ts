@@ -11,10 +11,9 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from '@prisma/client';
-import { Prisma } from '@prisma/postgres-client/client';
 import { User as SuperbaseUser } from '@supabase/supabase-js';
 import { plainToInstance } from 'class-transformer';
-import { validateOrReject } from 'class-validator';
+import { validateOrReject, ValidationError } from 'class-validator';
 import { SuperbaseStorageService } from '../../../superbase/superbase-storage.service';
 import { SupabaseService } from '../../../superbase/superbase.service';
 import { ErrorMessage } from '../../core/decorators/error-message.decorator';
@@ -24,8 +23,8 @@ import { UserService } from '../services/user.service';
 
 interface IAuthRequest {
   user: SuperbaseUser;
-  cookies: {
-    access_token: string;
+  headers: {
+    authorization: string;
   };
   csrfToken: () => string;
   body: User;
@@ -129,11 +128,6 @@ export class UserController {
     }
   }
 
-  mapUpdateUserDtoToPrisma(dto: UpdateUserDTO): Prisma.UserUpdateInput {
-    const { mediaObject, ...userData } = dto;
-    return userData;
-  }
-
   @Post('profiles')
   @SuccessMessage('Dados do usuário atualizado com sucesso.')
   @ErrorMessage('Erro ao atualizar os dados do usuário.')
@@ -149,21 +143,24 @@ export class UserController {
       throw new BadRequestException('JSON inválido no campo data.');
     }
     delete parsedData.mediaObject;
-    const dtoInstance = plainToInstance(UpdateUserDTO, parsedData);
+    const user_id = req.user.id ?? '';
+    const upToDateUser = { ...parsedData, user_id: user_id };
+    const dtoInstance = plainToInstance(UpdateUserDTO, parsedData, {
+      enableImplicitConversion: true,
+    });
     try {
       await validateOrReject(dtoInstance, {
         whitelist: true,
         forbidNonWhitelisted: true,
       });
-      const upToDateUserData = this.mapUpdateUserDtoToPrisma(parsedData);
       let userDataUpdated: User;
       let finalUserUpdate: User & { address?: any };
       userDataUpdated = await this.userService.updateUser({
-        where: { user_id: req.user.id },
-        data: upToDateUserData,
+        where: { user_id: user_id },
+        data: upToDateUser,
       });
 
-      const accessToken = req.cookies?.access_token;
+      const accessToken = req.headers.authorization.split(' ')[1];
 
       if (!accessToken) {
         throw new UnauthorizedException('Token não encontrado');
@@ -188,7 +185,11 @@ export class UserController {
       return finalUserUpdate;
     } catch (errors) {
       console.error('ERROS DE VALIDAÇÃO:', JSON.stringify(errors, null, 2));
-      throw errors;
+      const messages = (errors as ValidationError[])
+        .map((err) => Object.values(err.constraints ?? {}))
+        .flat();
+
+      throw new BadRequestException(messages[0]);
     }
   }
 }

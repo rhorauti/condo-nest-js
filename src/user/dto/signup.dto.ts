@@ -8,7 +8,7 @@ export class SignUpDTO extends LoginDTO {
   @IsString({ message: 'Formato inválido.' })
   @Matches(/^[A-Za-zÀ-ÖØ-öø-ÿ]{2,}(\s+[A-Za-zÀ-ÖØ-öø-ÿ]+)+$/, {
     message:
-      'Informe pelo menos nome e sobrenome, e o primeiro nome deve ter no mínimo 2 letras.',
+      'Informe pelo menos nome e sobrenome, e o primeiro nome deve ter no mínimo 2 letras e não pode conter números.',
   })
   name!: string;
 

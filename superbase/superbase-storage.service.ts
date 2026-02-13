@@ -9,6 +9,38 @@ export class SuperbaseStorageService {
 
   constructor(private supabase: SupabaseService) {}
 
+  async getFiles(
+    accessToken: string,
+    opts: {
+      paths: string | string[];
+      expiresInSeconds?: number;
+    },
+  ) {
+    const { paths, expiresInSeconds = 60 * 60 } = opts;
+
+    const client = this.supabase.getUserClient(accessToken);
+
+    const isArray = Array.isArray(paths);
+
+    const filePaths = isArray ? paths : [paths];
+
+    const { data, error } = await client.storage
+      .from(this.bucket)
+      .createSignedUrls(filePaths, expiresInSeconds);
+
+    if (error) {
+      console.error(error);
+      throw new InternalServerErrorException('Erro ao gerar URLs dos arquivos');
+    }
+
+    // retorna single ou array automaticamente
+    if (!isArray) {
+      return data?.[0] ?? null;
+    }
+
+    return data;
+  }
+
   async uploadFile(
     accessToken: string,
     opts: {
@@ -42,7 +74,7 @@ export class SuperbaseStorageService {
       throw new InternalServerErrorException('Usuário não autenticado');
     }
 
-    const filePath = `${folder}/${user.id}-${filename}`;
+    const filePath = `${user.id}/${folder}/${filename}`;
 
     const { error: uploadError } = await client.storage
       .from(this.bucket)
